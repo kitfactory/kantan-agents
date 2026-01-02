@@ -6,6 +6,12 @@ from typing import Any, Callable, Mapping
 
 import agents
 from agents.tool import FunctionTool
+from agents.tracing import generation_span
+from agents.lifecycle import RunHooksBase
+try:
+    from pydantic import BaseModel
+except Exception:  # pragma: no cover - fallback if pydantic is unavailable
+    BaseModel = None
 
 from .prompt import Prompt
 from .utils import flatten_prompt_meta, hash_text, render_template
@@ -64,10 +70,12 @@ class Agent:
         sdk_agent = self._build_sdk_agent(rendered_instructions)
         merged_metadata = self._build_trace_metadata(trace_metadata)
         run_config = agents.RunConfig(trace_metadata=merged_metadata)
+        hooks = _OutputTraceHooks(self._output_type)
         run_result = await agents.Runner.run(
             starting_agent=sdk_agent,
             input=input,
             run_config=run_config,
+            hooks=hooks,
         )
         return run_result
 
@@ -138,3 +146,40 @@ class Agent:
 
         merged.update(auto)
         return merged
+
+
+class _OutputTraceHooks(RunHooksBase[Any, Any]):
+    def __init__(self, output_type: type | None) -> None:
+        self._output_type = output_type
+
+    async def on_agent_end(self, context, agent, output: Any) -> None:
+        payload = _output_payload(output, self._output_type)
+        if payload is None:
+            return
+        with generation_span(output=payload):
+            return
+
+
+def _output_payload(output: Any, output_type: type | None) -> Any | None:
+    if output is None:
+        return None
+    if BaseModel is not None and isinstance(output, BaseModel):
+        output_dict = output.model_dump()
+    elif hasattr(output, "dict") and callable(getattr(output, "dict")):
+        output_dict = output.dict()
+    elif isinstance(output, dict):
+        output_dict = output
+    else:
+        return None
+
+    if (
+        output_type is not None
+        and getattr(output_type, "__name__", None) == "_RubricSchema"
+        and isinstance(output_dict, dict)
+    ):
+        return {"rubric": output_dict}
+
+    if isinstance(output_dict, dict) and {"score", "comments"} <= set(output_dict.keys()):
+        return {"rubric": output_dict}
+
+    return output_dict

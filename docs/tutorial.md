@@ -6,7 +6,7 @@ The final unit shows tool-based evaluation and prompt analysis.
 Prerequisites
 
 - `OPENAI_API_KEY` is set in the environment
-- Use `gpt-5.1-mini` for testing/verification
+- Use `gpt-5-mini` for testing/verification
 
 Unit 1: Run a minimal Agent
 

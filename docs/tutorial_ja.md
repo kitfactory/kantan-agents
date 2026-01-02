@@ -6,7 +6,7 @@ kantan-agents チュートリアル（v0.1）
 前提
 
 - OPENAI_API_KEY が環境変数に設定済み
-- テスト/動作確認では gpt-5.1-mini を使用
+- テスト/動作確認では gpt-5-mini を使用
 
 単元1: 最小構成で Agent を動かす
 

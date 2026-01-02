@@ -10,7 +10,7 @@ from kantan_llm.tracing import SQLiteTracer
 
 @pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="OPENAI_API_KEY is required")
 def test_tutorial_snippets_smoke(tmp_path):
-    os.environ["OPENAI_DEFAULT_MODEL"] = "gpt-5.1-mini"
+    os.environ["OPENAI_DEFAULT_MODEL"] = "gpt-5-mini"
 
     try:
         agent = Agent(name="basic-agent", instructions="You are a helpful assistant.")
@@ -71,5 +71,5 @@ def test_tutorial_snippets_smoke(tmp_path):
         assert isinstance(result.final_output, RUBRIC)
     except BadRequestError as exc:
         if "model_not_found" in str(exc) or "does not exist" in str(exc):
-            pytest.skip("gpt-5.1-mini is not available for this API key")
+            pytest.skip("gpt-5-mini is not available for this API key")
         raise

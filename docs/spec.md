@@ -112,6 +112,12 @@ kantan-agents 仕様（v0.1）
 - When: Agent の output_type に RUBRIC を指定する
 - Then: rubric の schema を使用した structured output が可能になる
 
+5.3. Agent の最終出力を Trace に反映する（F-06）
+
+- Given: structured output または rubric を返す
+- When: Agent.run が完了する
+- Then: 最終出力を generation span として Trace に記録する
+
 6. ドキュメント（F-07）
 
 6.1. 最小利用例を提供する（F-07）

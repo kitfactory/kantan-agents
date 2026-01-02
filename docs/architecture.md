@@ -71,6 +71,7 @@ run(input: str, *, render_vars: dict | None = None, trace_metadata: dict | None 
 - Prompt は kantan-lab 管理前提の最小モデルとし、管理機能は持たない。
 - Trace への書き込み自体は kantan-llm に委譲し、Agent はメタデータの付与のみを担当する。
 - 標準の renderer は {{ }} 形式で変数をレンダリングする。
+- structured output / rubric は generation span として Trace に記録する。
 
 ログ/エラー方針
 

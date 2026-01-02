@@ -25,7 +25,7 @@ kantan-agents 作業計画（v0.1）
 環境変数
 
 - OPENAI_API_KEY: テスト時に使用（OpenAI API Key）
-- テストでは gpt-5.1-mini を使用する。
+- テストでは gpt-5-mini を使用する。
 
 チュートリアル（段階的）
 
