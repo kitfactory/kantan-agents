@@ -1,22 +1,22 @@
-kantan-agents Tutorial (v0.1)
+kantan-agents チュートリアル（v0.1）
 
-This tutorial is divided into units. Each unit follows the order: Use Case → Approach → Code.
-The final unit shows tool-based evaluation and prompt analysis.
+このチュートリアルは段階的に単元を分け、各単元を「利用ケース → 実現方法 → ソースコード」の順で説明する。
+最後はツールを使ったエージェントで評価を含めてプロンプトの分析を行う。
 
-Prerequisites
+前提
 
-- `OPENAI_API_KEY` is set in the environment
-- Use `gpt-5.1-mini` for testing/verification
+- OPENAI_API_KEY が環境変数に設定済み
+- テスト/動作確認では gpt-5.1-mini を使用
 
-Unit 1: Run a minimal Agent
+単元1: 最小構成で Agent を動かす
 
-Use Case:
-Confirm that a basic Agent run works end-to-end.
+利用ケース:
+シンプルな質問応答を行い、Agent が動作することを確認する。
 
-Approach:
-Create an Agent and call `run`. The return type matches the Agents SDK.
+実現方法:
+Agent を作成して run を呼び出す。結果は Agents SDK と同じ返値が返る。
 
-Code:
+ソースコード:
 ```python
 from kantan_agents import Agent
 
@@ -25,15 +25,15 @@ result = agent.run("Hello")
 print(result.final_output)
 ```
 
-Unit 2: Enable tracing and persist records
+単元2: tracing を有効化して記録を残す
 
-Use Case:
-Save Trace data to SQLite for later analysis.
+利用ケース:
+Trace を SQLite に保存し、後で検索できるようにする。
 
-Approach:
-Register `SQLiteTracer` from kantan-llm and then run the Agent.
+実現方法:
+kantan-llm の SQLiteTracer を登録してから Agent を実行する。
 
-Code:
+ソースコード:
 ```python
 from kantan_llm.tracing import SQLiteTracer
 from kantan_agents import Agent, set_trace_processors
@@ -46,15 +46,15 @@ result = agent.run("Explain trace metadata in one sentence.")
 print(result.final_output)
 ```
 
-Unit 3: Use Prompt with versioned instructions
+単元3: Prompt 型でバージョン付き指示を使う
 
-Use Case:
-Persist prompt name/version in Trace metadata for analysis.
+利用ケース:
+プロンプトの name/version を Trace に残し、後で分析できる状態にする。
 
-Approach:
-Create a Prompt and pass it to the Agent. Standard metadata is auto-injected.
+実現方法:
+Prompt を作成して Agent に渡す。run 実行時に標準メタデータが自動注入される。
 
-Code:
+ソースコード:
 ```python
 from kantan_agents import Agent, Prompt
 
@@ -73,15 +73,15 @@ result = agent.run(
 print(result.final_output)
 ```
 
-Unit 4: Use structured output
+単元4: structured output を使う
 
-Use Case:
-Return a structured result for easier downstream analysis.
+利用ケース:
+構造化出力で結果を取得し、分析しやすい出力形式を作る。
 
-Approach:
-Provide a Pydantic model via `output_type`.
+実現方法:
+output_type に Pydantic モデルを指定する。
 
-Code:
+ソースコード:
 ```python
 from pydantic import BaseModel
 from kantan_agents import Agent
@@ -99,15 +99,15 @@ result = agent.run("Summarize the release notes.")
 print(result.final_output)
 ```
 
-Unit 5: Delegate with handoffs
+単元5: handoffs でサブエージェントへ委譲する
 
-Use Case:
-Split work into specialist agents and hand off conversations.
+利用ケース:
+専門エージェントに仕事を分担し、会話を引き継ぐ。
 
-Approach:
-Pass other Agent instances via `handoffs`.
+実現方法:
+handoffs に別 Agent を渡して委譲できる構成にする。
 
-Code:
+ソースコード:
 ```python
 from kantan_agents import Agent
 
@@ -123,15 +123,15 @@ result = manager.run("I need a refund for last week's order.")
 print(result.final_output)
 ```
 
-Unit 6: Tool-based evaluation and prompt analysis
+単元6: ツールを使った評価とプロンプト分析
 
-Use Case:
-Record tool calls and rubric evaluations in Trace to support prompt analysis.
+利用ケース:
+ツールの実行結果と評価（rubric）が Trace に残り、kantan-lab でプロンプト改善の材料にする。
 
-Approach:
-Pass tools as callables and set `output_type=RUBRIC`.
+実現方法:
+tools に関数を渡し、output_type に RUBRIC を指定する。
 
-Code:
+ソースコード:
 ```python
 from kantan_agents import Agent, RUBRIC
 
@@ -149,9 +149,9 @@ result = agent.run("Assess this sentence: 'Tracing enables analysis.'")
 print(result.final_output)
 ```
 
-Using kantan-llm Search Service
+kantan-llm 検索サービスの利用例
 
-- Use TraceSearchService to query spans and inspect structured output and rubric data.
+- TraceSearchService を使って trace/span を検索し、評価結果を分析する。
 
 ```python
 from kantan_llm.tracing import SQLiteTracer, SpanQuery
