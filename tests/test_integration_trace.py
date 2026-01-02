@@ -13,6 +13,7 @@ class Rubric(BaseModel):
     comments: list[str]
 
 
+@pytest.mark.integration
 @pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="OPENAI_API_KEY is required")
 def test_trace_records_tool_calls_and_rubric(tmp_path):
     os.environ["OPENAI_DEFAULT_MODEL"] = "gpt-5-mini"

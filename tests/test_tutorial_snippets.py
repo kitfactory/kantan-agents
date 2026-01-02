@@ -8,6 +8,7 @@ from kantan_agents import Agent, Prompt, RUBRIC, set_trace_processors
 from kantan_llm.tracing import SQLiteTracer
 
 
+@pytest.mark.integration
 @pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="OPENAI_API_KEY is required")
 def test_tutorial_snippets_smoke(tmp_path):
     os.environ["OPENAI_DEFAULT_MODEL"] = "gpt-5-mini"
