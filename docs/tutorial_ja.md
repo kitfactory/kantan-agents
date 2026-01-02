@@ -25,7 +25,30 @@ result = agent.run("Hello")
 print(result.final_output)
 ```
 
-単元2: tracing を有効化して記録を残す
+単元2: render_vars でテンプレートを使う
+
+利用ケース:
+実行時の変数を指示文テンプレートに埋め込む。
+
+実現方法:
+instructions に {{ }} プレースホルダを使い、run 時に render_vars を渡す。
+
+ソースコード:
+```python
+from kantan_agents import Agent
+
+agent = Agent(
+    name="templated-agent",
+    instructions="Summarize {{ topic }} in {{ style }}.",
+)
+result = agent.run(
+    "Use concise bullet points.",
+    render_vars={"topic": "trace metadata", "style": "two sentences"},
+)
+print(result.final_output)
+```
+
+単元3: tracing を有効化して記録を残す
 
 利用ケース:
 Trace を SQLite に保存し、後で検索できるようにする。
@@ -46,7 +69,31 @@ result = agent.run("Explain trace metadata in one sentence.")
 print(result.final_output)
 ```
 
-単元3: Prompt 型でバージョン付き指示を使う
+単元4: 再エクスポートしたトレース API で独自メタデータを付与する
+
+利用ケース:
+Trace に session_id などの独自キーを付与し、分析でフィルタしやすくする。
+
+実現方法:
+kantan_agents の再エクスポート API を使い、run 時に trace_metadata を渡す。
+
+ソースコード:
+```python
+from kantan_llm.tracing import SQLiteTracer
+from kantan_agents import Agent, set_trace_processors
+
+tracer = SQLiteTracer("kantan_agents_traces.sqlite3")
+set_trace_processors([tracer])
+
+agent = Agent(name="trace-agent", instructions="Answer briefly.")
+result = agent.run(
+    "Explain trace metadata in one sentence.",
+    trace_metadata={"session_id": "sess-001", "user_tier": "pro"},
+)
+print(result.final_output)
+```
+
+単元5: Prompt 型でバージョン付き指示を使う
 
 利用ケース:
 プロンプトの name/version を Trace に残し、後で分析できる状態にする。
@@ -66,14 +113,11 @@ prompt = Prompt(
 )
 
 agent = Agent(name="prompted-agent", instructions=prompt)
-result = agent.run(
-    "Explain tracing in one sentence.",
-    trace_metadata={"session_id": "sess-001"},
-)
+result = agent.run("Explain tracing in one sentence.")
 print(result.final_output)
 ```
 
-単元4: structured output を使う
+単元6: structured output を使う
 
 利用ケース:
 構造化出力で結果を取得し、分析しやすい出力形式を作る。
@@ -99,7 +143,7 @@ result = agent.run("Summarize the release notes.")
 print(result.final_output)
 ```
 
-単元5: handoffs でサブエージェントへ委譲する
+単元7: handoffs でサブエージェントへ委譲する
 
 利用ケース:
 専門エージェントに仕事を分担し、会話を引き継ぐ。
@@ -123,7 +167,7 @@ result = manager.run("I need a refund for last week's order.")
 print(result.final_output)
 ```
 
-単元6: ツールを使った評価とプロンプト分析
+単元8: ツールを使った評価とプロンプト分析
 
 利用ケース:
 ツールの実行結果と評価（rubric）が Trace に残り、kantan-lab でプロンプト改善の材料にする。

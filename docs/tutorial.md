@@ -25,7 +25,30 @@ result = agent.run("Hello")
 print(result.final_output)
 ```
 
-Unit 2: Enable tracing and persist records
+Unit 2: Use render_vars for templated instructions
+
+Use Case:
+Inject runtime variables into the instruction template.
+
+Approach:
+Use `{{ }}` placeholders in instructions and pass `render_vars` to `run`.
+
+Code:
+```python
+from kantan_agents import Agent
+
+agent = Agent(
+    name="templated-agent",
+    instructions="Summarize {{ topic }} in {{ style }}.",
+)
+result = agent.run(
+    "Use concise bullet points.",
+    render_vars={"topic": "trace metadata", "style": "two sentences"},
+)
+print(result.final_output)
+```
+
+Unit 3: Enable tracing and persist records
 
 Use Case:
 Save Trace data to SQLite for later analysis.
@@ -46,7 +69,31 @@ result = agent.run("Explain trace metadata in one sentence.")
 print(result.final_output)
 ```
 
-Unit 3: Use Prompt with versioned instructions
+Unit 4: Add custom trace metadata via re-exported tracing API
+
+Use Case:
+Attach custom keys (e.g., session identifiers) to Trace metadata.
+
+Approach:
+Use the re-exported tracing API from `kantan_agents` and pass `trace_metadata` at run time.
+
+Code:
+```python
+from kantan_llm.tracing import SQLiteTracer
+from kantan_agents import Agent, set_trace_processors
+
+tracer = SQLiteTracer("kantan_agents_traces.sqlite3")
+set_trace_processors([tracer])
+
+agent = Agent(name="trace-agent", instructions="Answer briefly.")
+result = agent.run(
+    "Explain trace metadata in one sentence.",
+    trace_metadata={"session_id": "sess-001", "user_tier": "pro"},
+)
+print(result.final_output)
+```
+
+Unit 5: Use Prompt with versioned instructions
 
 Use Case:
 Persist prompt name/version in Trace metadata for analysis.
@@ -66,14 +113,11 @@ prompt = Prompt(
 )
 
 agent = Agent(name="prompted-agent", instructions=prompt)
-result = agent.run(
-    "Explain tracing in one sentence.",
-    trace_metadata={"session_id": "sess-001"},
-)
+result = agent.run("Explain tracing in one sentence.")
 print(result.final_output)
 ```
 
-Unit 4: Use structured output
+Unit 6: Use structured output
 
 Use Case:
 Return a structured result for easier downstream analysis.
@@ -99,7 +143,7 @@ result = agent.run("Summarize the release notes.")
 print(result.final_output)
 ```
 
-Unit 5: Delegate with handoffs
+Unit 7: Delegate with handoffs
 
 Use Case:
 Split work into specialist agents and hand off conversations.
@@ -123,7 +167,7 @@ result = manager.run("I need a refund for last week's order.")
 print(result.final_output)
 ```
 
-Unit 6: Tool-based evaluation and prompt analysis
+Unit 8: Tool-based evaluation and prompt analysis
 
 Use Case:
 Record tool calls and rubric evaluations in Trace to support prompt analysis.
