@@ -6,26 +6,30 @@ kantan-agents チュートリアル 単元1（v0.1）
 
 概要
 
-この単元では最小の実行例を示す。Agent を作成して run を呼び出し、context から SDK の返値を読む。以降の単元でも同じ流れを使う。
+この単元では最小の実行例を示す。Agent を作成して run を呼び出し、返ってきた context から SDK の返値を読む。context の詳細は次の単元で扱う。
 
 ステップ
 
 - シンプルな instructions を用意する。
-- 推奨の context を用意する。
-- run を呼び出して context["result"] を読む。
+- run を呼び出す（context は省略する）。
+- context["result"] を読む。
 
 実現方法
 
-- get_context_with_policy(PolicyMode.RECOMMENDED) を基準にする。
+- context を渡さない場合は空の dict を自動生成する。
 - run 完了後の context には必ず result が入る。
 - history が有効な場合は context["history"] に保存される。
 
+よくある失敗
+
+- context を変数に受け取らず result を参照できない
+- context["result"] ではなく context 自体を出力してしまう
+
 ソースコード
 ```python
-from kantan_agents import Agent, PolicyMode, get_context_with_policy
+from kantan_agents import Agent
 
 agent = Agent(name="basic-agent", instructions="You are a helpful assistant.")
-context = get_context_with_policy(PolicyMode.RECOMMENDED)
-context = agent.run("Hello", context)
+context = agent.run("Hello")
 print(context["result"].final_output)
 ```

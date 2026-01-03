@@ -21,6 +21,7 @@ How to
 - Access values directly on the returned model.
 - output_dest stores a dict version in context.
 - output_dest overwrites existing keys and is skipped when output is not dict-like.
+- Use descriptive keys such as summary_json or evaluation_rubric.
 
 Code
 ```python

@@ -19,7 +19,16 @@ kantan-agents is a thin, opinionated wrapper around the OpenAI Agents SDK that m
 from kantan_agents import Agent
 
 agent = Agent(name="basic-agent", instructions="You are a helpful assistant.")
-context = agent.run("Hello", {})
+context = agent.run("Hello")
+print(context["result"].final_output)
+```
+
+Async usage
+```python
+from kantan_agents import Agent
+
+agent = Agent(name="basic-agent", instructions="You are a helpful assistant.")
+context = await agent.run_async("Hello")
 print(context["result"].final_output)
 ```
 

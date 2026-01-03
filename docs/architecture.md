@@ -3,7 +3,7 @@ kantan-agents アーキテクチャ（v0.1）
 レイヤー構造と依存方向
 
 - Presentation/API 層
-  - 公開 API: Agent, Prompt, tracing API 再エクスポート, judge()
+  - 公開 API: Agent, Prompt, tracing API 再エクスポート, judge()（内部補助）
 - Application/Domain 層
   - Trace メタデータ標準化ルール
   - Prompt/Agent の入力バリデーション
@@ -20,7 +20,8 @@ kantan-agents アーキテクチャ（v0.1）
 
 - Agent
   - __init__(name: str, instructions: str | Prompt, *, tools: list | None = None, renderer: Callable | None = None, metadata: dict | None = None, output_type: type | None = None, handoffs: list | None = None, allow_env: bool = False, history: int = 50, output_dest: str | None = None)
-  - run(input: str, context: dict) -> dict
+  - run(input: str, context: dict | None = None) -> dict
+  - run_async(input: str, context: dict | None = None) -> dict
 - Context
   - policy: dict | None
   - result: Any | None
@@ -64,14 +65,18 @@ __init__(name: str, instructions: str | Prompt, *, tools: list | None = None, re
 | history | int | no | context に保存する履歴件数。0 の場合は保存しない。 |
 | output_dest | str \| None | no | structured output を保存する context のキー名。 |
 
-run(input: str, context: dict) -> dict
+run(input: str, context: dict | None = None) -> dict
+
+run_async(input: str, context: dict | None = None) -> dict
 
 | 引数 | 型 | 必須 | 説明 |
 | --- | --- | --- | --- |
 | input | str | yes | Agent への入力。 |
-| context | dict | yes | rendering/policy/result を保持する Context。 |
+| context | dict \| None | no | rendering/policy/result を保持する Context。None/空の dict の場合は補完する。 |
 
 返値: context。
+
+run_async も同じ引数で context を返す。
 
 データ設計（最小）
 

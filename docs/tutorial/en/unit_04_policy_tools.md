@@ -6,7 +6,7 @@ Apply policy to tool usage
 
 Overview
 
-This unit shows how to constrain tool usage with policy. You can explicitly allow tools, deny tools, and add parameter constraints. Deny wins if a tool appears in both allow and deny.
+This unit shows how to constrain tool usage with policy. You can explicitly allow tools, deny tools, and add parameter constraints. Deny wins if a tool appears in both allow and deny. Skip this unit unless you need tool controls.
 
 Step
 

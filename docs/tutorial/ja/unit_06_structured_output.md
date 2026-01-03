@@ -21,6 +21,7 @@ structured output を使う
 - モデルの属性アクセスで値を取り出せる。
 - output_dest を指定すると context に dict 形式で保存される。
 - output_dest は既存キーを上書きし、dict で取得できない場合は保存されない。
+- output_dest の命名は内容が分かるキー（例: summary_json, evaluation_rubric）を推奨する。
 
 ソースコード
 ```python

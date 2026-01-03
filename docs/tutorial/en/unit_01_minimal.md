@@ -6,26 +6,30 @@ Run a minimal Agent
 
 Overview
 
-This unit shows the smallest runnable example. You will create a single Agent, call run, and read the SDK result from context. Keep this pattern in mind because every other unit builds on it.
+This unit shows the smallest runnable example. You will create a single Agent, call run, and read the SDK result from the returned context. We will cover context details in the next unit.
 
 Step
 
 - Create an Agent with a short instruction string.
-- Prepare a context (recommended policy is fine).
-- Call run and read context["result"].
+- Call run (omit context).
+- Read context["result"].
 
 How to
 
-- Use get_context_with_policy(PolicyMode.RECOMMENDED) as a safe default.
+- If you omit context, kantan-agents creates an empty dict automatically.
 - The returned context always contains a result after run completes.
 - History is stored in context["history"] when enabled.
 
+Common pitfalls
+
+- Not keeping the returned context for later access
+- Printing context itself instead of context["result"]
+
 Code
 ```python
-from kantan_agents import Agent, PolicyMode, get_context_with_policy
+from kantan_agents import Agent
 
 agent = Agent(name="basic-agent", instructions="You are a helpful assistant.")
-context = get_context_with_policy(PolicyMode.RECOMMENDED)
-context = agent.run("Hello", context)
+context = agent.run("Hello")
 print(context["result"].final_output)
 ```

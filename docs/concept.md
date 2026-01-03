@@ -44,7 +44,7 @@ kantan-agents 要件定義（v0.1）
 | F-03 | Agent.run と Trace メタデータ自動注入 | prompt/agent/run の標準キーを Trace に注入 | kantan-llm Trace | v0.1 |
 | F-04 | Prompt 型（kantan-lab 管理） | name/version/text/meta/id を最小定義 | kantan-lab | v0.1 |
 | F-05 | Trace メタデータ標準キー | kantan-lab 分析用のキー規約 | kantan-llm Trace / kantan-lab | v0.1 |
-| F-06 | judge() ヘルパ | rubric structured output の自動保存 | kantan-llm | v0.2 |
+| F-06 | judge() ヘルパ | rubric structured output の自動保存（内部補助、基本は RUBRIC） | kantan-llm | v0.2 |
 | F-07 | 最小利用ドキュメント | tracing 設定 → Agent 作成 → run → SQLite 検索 | kantan-llm | v0.1 |
 | F-08 | Handoff のサポート | Agent インスタンス間の handoff を利用可能にする | OpenAI Agents SDK | v0.1 |
 | F-09 | RUBRIC schema 定数 | output_type=RUBRIC で rubric structured output を簡易化 | kantan-llm | v0.2 |
@@ -56,9 +56,9 @@ kantan-agents 要件定義（v0.1）
 主要な仕様メモ
 
 - Agent.run
-  - シグネチャ: run(input: str, context: dict) -> context
+  - シグネチャ: run(input: str, context: dict | None = None) -> context
   - context は rendering/policy/result を含む辞書
-  - context が空の dict の場合は Agent 内で補完する
+  - context が None または空の dict の場合は Agent 内で補完する
   - history は context["history"] に配列として保持する
   - output_dest 指定時は structured output を context に保存する
   - context.result は Agents SDK の返値

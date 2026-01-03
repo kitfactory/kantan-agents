@@ -55,9 +55,9 @@ kantan-agents 仕様（v0.1）
 - Then: context はレンダリング変数と policy の参照に使用される
 - And: context.result に Agents SDK の返値を格納する
 
-2.6. context が空の dict の場合、context を補完する（F-10）
+2.6. context が None または空の dict の場合、context を補完する（F-10）
 
-- Given: context が空の dict である
+- Given: context が None または空の dict である
 - When: Agent.run を呼び出す
 - Then: Agent 内で policy と result を補完して利用する
 
@@ -72,6 +72,12 @@ kantan-agents 仕様（v0.1）
 - Given: Prompt.meta に複数型の値が含まれる
 - When: Trace metadata へ prompt_meta_* を展開する
 - Then: 文字列/数値（int/float）/真偽値のみを採用し、その他は無視する
+
+2.9. run_async を呼び出したとき、run と同等の context を返す（F-10）
+
+- Given: context を使用して Agent.run_async を呼び出す
+- When: Agent.run_async が完了する
+- Then: run と同様に context を返す
 
 3. Prompt 型（kantan-lab 管理）（F-04）
 
@@ -126,6 +132,8 @@ kantan-agents 仕様（v0.1）
 - Given: structured output または rubric を返す
 - When: Agent.run が完了する
 - Then: 最終出力を generation span として Trace に記録する
+
+補足: judge() は内部補助であり、ユーザー向けの基本ルートは output_type=RUBRIC を使う。
 
 6. ドキュメント（F-07）
 
@@ -257,3 +265,17 @@ kantan-agents 仕様（v0.1）
 | E1 | [kantan-agents][E1] instructions is required |
 | E2 | [kantan-agents][E2] Prompt.text must not be empty |
 | E3 | [kantan-agents][E3] Prompt.name and Prompt.version must not be empty |
+| E4 | [kantan-agents][E4] Tool must define name |
+| E5 | [kantan-agents][E5] Context must be a dict |
+| E6 | [kantan-agents][E6] Context history must be a list |
+| E7 | [kantan-agents][E7] Tool provider must implement list_tools and get_policy |
+| E8 | [kantan-agents][E8] Tool is not allowed: {tool_name} |
+| E9 | [kantan-agents][E9] Unknown PolicyMode: {mode} |
+| E10 | [kantan-agents][E10] Tool input must be a JSON object |
+| E11 | [kantan-agents][E11] Tool parameter type mismatch: {tool_name}.{param_name} |
+| E12 | [kantan-agents][E12] Tool parameter enum mismatch: {tool_name}.{param_name} |
+| E13 | [kantan-agents][E13] Tool parameter minLength mismatch: {tool_name}.{param_name} |
+| E14 | [kantan-agents][E14] Tool parameter maxLength mismatch: {tool_name}.{param_name} |
+| E15 | [kantan-agents][E15] Tool parameter pattern mismatch: {tool_name}.{param_name} |
+| E16 | [kantan-agents][E16] Tool parameter minimum mismatch: {tool_name}.{param_name} |
+| E17 | [kantan-agents][E17] Tool parameter maximum mismatch: {tool_name}.{param_name} |

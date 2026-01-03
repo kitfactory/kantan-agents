@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 import importlib.metadata
 import inspect
 import json
@@ -71,9 +72,20 @@ class Agent:
     def run(
         self,
         input: str,
-        context: dict | None,
+        context: dict | None = None,
     ) -> dict:
-        return asyncio.run(self._arun(input, context=context))
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            return asyncio.run(self._arun(input, context=context))
+        return _run_in_thread(lambda: self._arun(input, context=context))
+
+    async def run_async(
+        self,
+        input: str,
+        context: dict | None = None,
+    ) -> dict:
+        return await self._arun(input, context=context)
 
     async def _arun(
         self,
@@ -81,8 +93,7 @@ class Agent:
         context: dict | None,
     ) -> dict:
         context = self._prepare_context(context)
-        rendered_instructions = self._render_instructions(context)
-        sdk_agent = self._build_sdk_agent(rendered_instructions)
+        sdk_agent = self._build_sdk_agent()
         merged_metadata = self._build_trace_metadata()
         run_config = agents.RunConfig(trace_metadata=merged_metadata)
         hooks = _OutputTraceHooks(self._output_type)
@@ -114,20 +125,25 @@ class Agent:
             return self._renderer(text, context, self._allow_env)
         return self._renderer(text, context)
 
-    def _build_sdk_agent(self, instructions: str) -> agents.Agent:
+    def _build_sdk_agent(self) -> agents.Agent:
         handoffs = [self._resolve_handoff(h) for h in self._handoffs]
         return agents.Agent(
             name=self._name,
-            instructions=instructions,
+            instructions=self._instruction_callable,
             tools=self._tools,
             handoffs=handoffs,
             output_type=self._output_type,
         )
 
+    def _instruction_callable(self, ctx, agent) -> str:
+        context = getattr(ctx, "context", None)
+        if not isinstance(context, Mapping):
+            context = None
+        return self._render_instructions(context)
+
     def _resolve_handoff(self, handoff: Any) -> Any:
         if isinstance(handoff, Agent):
-            rendered = handoff._render_instructions({})
-            return handoff._build_sdk_agent(rendered)
+            return handoff._build_sdk_agent()
         return handoff
 
     def _normalize_tools(self, tools: Sequence | None) -> list:
@@ -138,7 +154,7 @@ class Agent:
             normalized_tool = self._coerce_tool(tool)
             tool_name = _tool_name(normalized_tool)
             if not tool_name:
-                raise ValueError("Tool must define name")
+                raise ValueError("[kantan-agents][E4] Tool must define name")
             normalized[tool_name] = normalized_tool
         return [self._wrap_tool_with_policy(tool) for tool in normalized.values()]
 
@@ -164,7 +180,7 @@ class Agent:
         async def _on_invoke_tool(ctx, input_text: str) -> Any:
             policy = _extract_policy(ctx.context)
             if not is_tool_allowed(policy, tool_name):
-                raise ValueError(f"Tool is not allowed: {tool_name}")
+                raise ValueError(f"[kantan-agents][E8] Tool is not allowed: {tool_name}")
             _validate_tool_input(policy, tool_name, input_text)
             return await tool.on_invoke_tool(ctx, input_text)
 
@@ -180,15 +196,17 @@ class Agent:
         )
 
     def _prepare_context(self, context: dict | None) -> dict:
-        if context is None or not isinstance(context, dict):
-            raise ValueError("Context must be a dict")
+        if context is None:
+            context = {}
+        if not isinstance(context, dict):
+            raise ValueError("[kantan-agents][E5] Context must be a dict")
         resolved_policy = self._resolve_policy(context.get("policy"))
         context["policy"] = resolved_policy
         context.setdefault("result", None)
         if self._history > 0:
             history = context.setdefault("history", [])
             if not isinstance(history, list):
-                raise ValueError("Context history must be a list")
+                raise ValueError("[kantan-agents][E6] Context history must be a list")
         return context
 
     def _append_history(self, context: dict, user_input: str, run_result: Any) -> None:
@@ -196,7 +214,7 @@ class Agent:
             return
         history = context.setdefault("history", [])
         if not isinstance(history, list):
-            raise ValueError("Context history must be a list")
+            raise ValueError("[kantan-agents][E6] Context history must be a list")
         history.append({"role": "user", "text": user_input})
         if run_result is None:
             output_text = ""
@@ -324,7 +342,7 @@ def _collect_tool_providers() -> tuple[list, dict | None]:
         if callable(provider):
             provider = provider()
         if not hasattr(provider, "list_tools") or not hasattr(provider, "get_policy"):
-            raise ValueError("Tool provider must implement list_tools and get_policy")
+            raise ValueError("[kantan-agents][E7] Tool provider must implement list_tools and get_policy")
         provider_tools = provider.list_tools()
         if provider_tools:
             tools.extend(list(provider_tools))
@@ -357,10 +375,21 @@ def _extract_policy(context: Any) -> dict[str, Any] | None:
 def _validate_tool_input(policy: Mapping[str, Any] | None, tool_name: str, input_text: str) -> None:
     if not policy:
         return
-    try:
-        payload = json.loads(input_text) if input_text else {}
-    except Exception:
-        return
+    if input_text:
+        try:
+            payload = json.loads(input_text)
+        except Exception as exc:
+            raise ValueError("[kantan-agents][E10] Tool input must be a JSON object") from exc
+    else:
+        payload = {}
     if not isinstance(payload, dict):
-        return
+        raise ValueError("[kantan-agents][E10] Tool input must be a JSON object")
     validate_tool_params(policy, tool_name, payload)
+
+
+def _run_in_thread(coro_factory: Callable[[], Any]) -> Any:
+    def _runner() -> Any:
+        return asyncio.run(coro_factory())
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        return executor.submit(_runner).result()

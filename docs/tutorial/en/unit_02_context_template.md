@@ -16,9 +16,15 @@ Step
 
 How to
 
+- Context is optional, but you must pass values when using templates.
 - Reference variables as {{ $ctx.key }} in instructions.
 - Update the context dict before calling run.
 - You can reference history as {{ $ctx.history }} if you need it.
+
+Common pitfalls
+
+- Writing {{ key }} instead of {{ $ctx.key }}
+- Forgetting to update context and getting empty strings
 
 Code
 ```python

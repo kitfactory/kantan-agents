@@ -19,7 +19,16 @@ kantan-agents は OpenAI Agents SDK の薄いラッパで、観測性と評価�
 from kantan_agents import Agent
 
 agent = Agent(name="basic-agent", instructions="You are a helpful assistant.")
-context = agent.run("Hello", {})
+context = agent.run("Hello")
+print(context["result"].final_output)
+```
+
+非同期の使い方
+```python
+from kantan_agents import Agent
+
+agent = Agent(name="basic-agent", instructions="You are a helpful assistant.")
+context = await agent.run_async("Hello")
 print(context["result"].final_output)
 ```
 

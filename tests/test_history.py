@@ -11,6 +11,14 @@ def test_prepare_context_adds_history_list_when_enabled():
     assert context["history"] == []
 
 
+def test_prepare_context_defaults_when_none():
+    agent = Agent(name="agent", instructions="hello", history=1)
+    context = agent._prepare_context(None)
+    assert context["result"] is None
+    assert "policy" in context
+    assert context["history"] == []
+
+
 def test_append_history_respects_limit():
     agent = Agent(name="agent", instructions="hello", history=2)
     context = {"history": []}

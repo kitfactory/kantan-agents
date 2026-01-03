@@ -16,9 +16,15 @@ context でテンプレートを使う
 
 実現方法
 
+- context は省略できるが、テンプレートを使う場合は値を入れて渡す。
 - {{ $ctx.key }} を参照し、context を更新してから run する。
 - 既存の context に追記して使い回してもよい。
 - history を使う場合は {{ $ctx.history }} を参照する。
+
+よくある失敗
+
+- {{$ctx.key}} ではなく {{ key }} と書いてしまう
+- context を更新せずに run して空文字になる
 
 ソースコード
 ```python

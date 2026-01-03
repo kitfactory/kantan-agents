@@ -10,9 +10,10 @@ kantan-agents チュートリアル（v0.1）
 Context と policy の初期値
 
 - Agent.run は context の辞書を返す。SDK の返値は context["result"] に入る。
-- context の辞書を渡す。基準として get_context_with_policy(PolicyMode.RECOMMENDED) を使う。
-- 空の辞書を渡した場合、Agent が tool/provider の policy を補完する。
-- get_context_with_policy(PolicyMode.ALLOW_ALL | PolicyMode.DENY_ALL | PolicyMode.RECOMMENDED) で事前作成できる。
+- async が必要な場合は await Agent.run_async(...) を使う。
+- context は省略できる。省略時は空の dict を自動生成する。
+- 空の dict を渡した場合、Agent が tool/provider の policy を補完する。
+- context を渡す場合は get_context_with_policy(PolicyMode.ALLOW_ALL | PolicyMode.DENY_ALL | PolicyMode.RECOMMENDED) で事前作成できる。
 - PolicyMode.RECOMMENDED は tool/provider の policy を基準にする。
 - history が有効な場合は context["history"] に保存される。
 
@@ -28,3 +29,11 @@ Context と policy の初期値
 - 単元8: ツールを使った評価とプロンプト分析 (`docs/tutorial/ja/unit_08_rubric.md`)
 - 単元9: entry-point でツールを追加する (`docs/tutorial/ja/unit_09_entry_points.md`)
 - 単元10: kantan-llm で Trace を検索する (`docs/tutorial/ja/unit_10_search_service.md`)
+
+推奨ルート
+
+- 単元1 → 単元2 で context とテンプレートの基本を押さえる。
+- 単元5 で Prompt メタデータを理解する。
+- 単元3 で tracing、単元8 で LLM-as-a-judge を学ぶ。
+- 最小の context テンプレートは `docs/usage.md` を参照する。
+- 単元4 と単元9 は応用なので、必要になるまでは後回しでよい。

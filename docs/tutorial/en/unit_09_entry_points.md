@@ -6,7 +6,7 @@ Provide tools via entry points
 
 Overview
 
-This unit shows how external packages can provide tools and policy. Providers are discovered via project.entry-points, so users do not need to wire tools manually. This is the recommended way to ship shared tool sets.
+This unit shows how external packages can provide tools and policy. Providers are discovered via project.entry-points, so users do not need to wire tools manually. This is the recommended way to ship shared tool sets. Skip if you are not distributing tools.
 
 Step
 

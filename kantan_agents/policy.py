@@ -26,7 +26,7 @@ def policy_from_mode(mode: PolicyMode) -> dict[str, Any]:
         return {"allow": [], "deny": "*", "params": {}}
     if mode is PolicyMode.RECOMMENDED:
         return {"allow": None, "deny": None, "params": {}}
-    raise ValueError(f"Unknown PolicyMode: {mode}")
+    raise ValueError(f"[kantan-agents][E9] Unknown PolicyMode: {mode}")
 
 
 def normalize_policy(policy: Mapping[str, Any] | PolicyMode | None) -> dict[str, Any]:
@@ -85,25 +85,25 @@ def _validate_param_rule(tool_name: str, param_name: str, value: Any, rule: Any)
         return
     if "type" in rule:
         if not _check_type(value, rule["type"]):
-            raise ValueError(f"Tool parameter type mismatch: {tool_name}.{param_name}")
+            raise ValueError(f"[kantan-agents][E11] Tool parameter type mismatch: {tool_name}.{param_name}")
     if "enum" in rule:
         allowed = rule["enum"]
         if isinstance(allowed, list) and value not in allowed:
-            raise ValueError(f"Tool parameter enum mismatch: {tool_name}.{param_name}")
+            raise ValueError(f"[kantan-agents][E12] Tool parameter enum mismatch: {tool_name}.{param_name}")
     if isinstance(value, str):
         if "minLength" in rule and len(value) < int(rule["minLength"]):
-            raise ValueError(f"Tool parameter minLength mismatch: {tool_name}.{param_name}")
+            raise ValueError(f"[kantan-agents][E13] Tool parameter minLength mismatch: {tool_name}.{param_name}")
         if "maxLength" in rule and len(value) > int(rule["maxLength"]):
-            raise ValueError(f"Tool parameter maxLength mismatch: {tool_name}.{param_name}")
+            raise ValueError(f"[kantan-agents][E14] Tool parameter maxLength mismatch: {tool_name}.{param_name}")
         if "pattern" in rule:
             pattern = rule["pattern"]
             if not isinstance(pattern, str) or re.search(pattern, value) is None:
-                raise ValueError(f"Tool parameter pattern mismatch: {tool_name}.{param_name}")
+                raise ValueError(f"[kantan-agents][E15] Tool parameter pattern mismatch: {tool_name}.{param_name}")
     if isinstance(value, (int, float)):
         if "minimum" in rule and value < float(rule["minimum"]):
-            raise ValueError(f"Tool parameter minimum mismatch: {tool_name}.{param_name}")
+            raise ValueError(f"[kantan-agents][E16] Tool parameter minimum mismatch: {tool_name}.{param_name}")
         if "maximum" in rule and value > float(rule["maximum"]):
-            raise ValueError(f"Tool parameter maximum mismatch: {tool_name}.{param_name}")
+            raise ValueError(f"[kantan-agents][E17] Tool parameter maximum mismatch: {tool_name}.{param_name}")
 
 
 def _check_type(value: Any, expected: str) -> bool:

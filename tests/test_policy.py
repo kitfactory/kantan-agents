@@ -1,5 +1,6 @@
 import pytest
 
+from kantan_agents.agent import _validate_tool_input
 from kantan_agents.policy import (
     PolicyMode,
     get_context_with_policy,
@@ -67,3 +68,10 @@ def test_validate_tool_params_checks_rules():
         validate_tool_params(policy, "tool_a", {"text": "b", "count": 2})
     with pytest.raises(ValueError):
         validate_tool_params(policy, "tool_a", {"text": "ab", "count": 0})
+
+
+def test_validate_tool_input_rejects_invalid_json():
+    policy = {"allow": ["tool_a"], "deny": [], "params": {}}
+    with pytest.raises(ValueError) as excinfo:
+        _validate_tool_input(policy, "tool_a", "{bad")
+    assert str(excinfo.value) == "[kantan-agents][E10] Tool input must be a JSON object"
