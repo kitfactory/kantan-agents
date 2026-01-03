@@ -18,6 +18,7 @@ entry-point でツールを追加する
 
 - group 名は "kantan_agents.tools" を使う。
 - tool には安定した name を持たせる。
+- 詳細なガイドは `docs/tool_provider_guide.md` を参照する。
 
 ソースコード
 ```toml

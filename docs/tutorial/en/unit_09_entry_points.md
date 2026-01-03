@@ -18,6 +18,7 @@ How to
 
 - Use the group name "kantan_agents.tools".
 - Return tools with a stable name attribute.
+- For a provider template and policy.params examples, see `docs/tool_provider_guide.md`.
 
 Code
 ```toml
