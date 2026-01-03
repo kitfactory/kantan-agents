@@ -35,15 +35,15 @@ def test_trace_records_tool_calls_and_rubric(tmp_path):
     )
 
     try:
-        result = agent.run("Assess: Trace quality is important.")
+        context = agent.run("Assess: Trace quality is important.")
     except BadRequestError as exc:
         if "model_not_found" in str(exc) or "does not exist" in str(exc):
             pytest.skip("gpt-5-mini is not available for this API key")
         raise
 
-    assert result.final_output is not None
-    assert isinstance(result.final_output, Rubric)
-    assert 0.0 <= result.final_output.score <= 1.0
+    assert context["result"].final_output is not None
+    assert isinstance(context["result"].final_output, Rubric)
+    assert 0.0 <= context["result"].final_output.score <= 1.0
 
     spans = tracer.search_spans(query=SpanQuery(limit=50))
     assert spans

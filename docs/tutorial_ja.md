@@ -14,24 +14,24 @@ kantan-agents チュートリアル（v0.1）
 シンプルな質問応答を行い、Agent が動作することを確認する。
 
 実現方法:
-Agent を作成して run を呼び出す。結果は Agents SDK と同じ返値が返る。
+Agent を作成して run を呼び出す。返値は context の辞書。
 
 ソースコード:
 ```python
 from kantan_agents import Agent
 
 agent = Agent(name="basic-agent", instructions="You are a helpful assistant.")
-result = agent.run("Hello")
-print(result.final_output)
+context = agent.run("Hello")
+print(context["result"].final_output)
 ```
 
-単元2: render_vars でテンプレートを使う
+単元2: context でテンプレートを使う
 
 利用ケース:
 実行時の変数を指示文テンプレートに埋め込む。
 
 実現方法:
-instructions に {{ }} プレースホルダを使い、run 時に render_vars を渡す。
+instructions に {{ }} プレースホルダを使い、$ctx を参照しながら context を渡す。
 
 ソースコード:
 ```python
@@ -39,13 +39,13 @@ from kantan_agents import Agent
 
 agent = Agent(
     name="templated-agent",
-    instructions="Summarize {{ topic }} in {{ style }}.",
+    instructions="Summarize {{ $ctx.topic }} in {{ $ctx.style }}.",
 )
-result = agent.run(
+context = agent.run(
     "Use concise bullet points.",
-    render_vars={"topic": "trace metadata", "style": "two sentences"},
+    context={"topic": "trace metadata", "style": "two sentences"},
 )
-print(result.final_output)
+print(context["result"].final_output)
 ```
 
 単元3: tracing を有効化して記録を残す
@@ -65,32 +65,39 @@ tracer = SQLiteTracer("kantan_agents_traces.sqlite3")
 set_trace_processors([tracer])
 
 agent = Agent(name="trace-agent", instructions="Answer briefly.")
-result = agent.run("Explain trace metadata in one sentence.")
-print(result.final_output)
+context = agent.run("Explain trace metadata in one sentence.")
+print(context["result"].final_output)
 ```
 
-単元4: 再エクスポートしたトレース API で独自メタデータを付与する
+単元4: policy でツール利用を制御する
 
 利用ケース:
-Trace に session_id などの独自キーを付与し、分析でフィルタしやすくする。
+指定したツールだけを許可し、パラメータを制限する。
 
 実現方法:
-kantan_agents の再エクスポート API を使い、run 時に trace_metadata を渡す。
+context に policy を渡し、ツール呼び出しに適用する。
 
 ソースコード:
 ```python
-from kantan_llm.tracing import SQLiteTracer
-from kantan_agents import Agent, set_trace_processors
+from kantan_agents import Agent
 
-tracer = SQLiteTracer("kantan_agents_traces.sqlite3")
-set_trace_processors([tracer])
 
-agent = Agent(name="trace-agent", instructions="Answer briefly.")
-result = agent.run(
-    "Explain trace metadata in one sentence.",
-    trace_metadata={"session_id": "sess-001", "user_tier": "pro"},
+def word_count(text: str) -> int:
+    return len(text.split())
+
+
+agent = Agent(
+    name="policy-agent",
+    instructions="Use word_count and answer briefly.",
+    tools=[word_count],
 )
-print(result.final_output)
+policy = {
+    "allow": ["word_count"],
+    "deny": [],
+    "params": {"word_count": {"text": {"type": "string", "maxLength": 200}}},
+}
+context = agent.run("Count the words in this sentence.", context={"policy": policy})
+print(context["result"].final_output)
 ```
 
 単元5: Prompt 型でバージョン付き指示を使う
@@ -113,8 +120,8 @@ prompt = Prompt(
 )
 
 agent = Agent(name="prompted-agent", instructions=prompt)
-result = agent.run("Explain tracing in one sentence.")
-print(result.final_output)
+context = agent.run("Explain tracing in one sentence.")
+print(context["result"].final_output)
 ```
 
 単元6: structured output を使う
@@ -139,8 +146,8 @@ agent = Agent(
     instructions="Summarize the input.",
     output_type=Summary,
 )
-result = agent.run("Summarize the release notes.")
-print(result.final_output)
+context = agent.run("Summarize the release notes.")
+print(context["result"].final_output)
 ```
 
 単元7: handoffs でサブエージェントへ委譲する
@@ -163,8 +170,8 @@ manager = Agent(
     instructions="Route tasks to specialists.",
     handoffs=[booking_agent, refund_agent],
 )
-result = manager.run("I need a refund for last week's order.")
-print(result.final_output)
+context = manager.run("I need a refund for last week's order.")
+print(context["result"].final_output)
 ```
 
 単元8: ツールを使った評価とプロンプト分析
@@ -189,8 +196,35 @@ agent = Agent(
     tools=[word_count],
     output_type=RUBRIC,
 )
-result = agent.run("Assess this sentence: 'Tracing enables analysis.'")
-print(result.final_output)
+context = agent.run("Assess this sentence: 'Tracing enables analysis.'")
+print(context["result"].final_output)
+```
+
+単元9: entry-point でツールを追加する
+
+利用ケース:
+外部パッケージのツールと policy を手動設定なしで読み込む。
+
+実現方法:
+project.entry-points."kantan_agents.tools" に provider を登録する。
+
+ソースコード:
+```toml
+[project.entry-points."kantan_agents.tools"]
+my_tools = "my_package.tools:MyToolProvider"
+```
+
+```python
+class MyToolProvider:
+    def list_tools(self):
+        return [my_tool_function]
+
+    def get_policy(self):
+        return {
+            "allow": ["my_tool_function"],
+            "deny": [],
+            "params": {"my_tool_function": {"text": {"type": "string", "maxLength": 200}}},
+        }
 ```
 
 kantan-llm 検索サービスの利用例

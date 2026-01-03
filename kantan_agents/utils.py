@@ -2,25 +2,32 @@ from __future__ import annotations
 
 import hashlib
 import re
+import os
 from typing import Any, Mapping
 
 
-_RENDER_PATTERN = re.compile(r"{{\s*([a-zA-Z0-9_.-]+)\s*}}")
+_RENDER_PATTERN = re.compile(r"{{\s*([^{}]+?)\s*}}")
 
 
 def hash_text(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-def render_template(template: str, render_vars: Mapping[str, Any] | None) -> str:
-    if not render_vars:
-        return template
+def render_template(template: str, context: Mapping[str, Any] | None, allow_env: bool = False) -> str:
+    if not context:
+        context = {}
 
     def _replace(match: re.Match[str]) -> str:
-        key = match.group(1)
-        if key not in render_vars:
-            return match.group(0)
-        return str(render_vars[key])
+        key = match.group(1).strip()
+        if key.startswith("$ctx."):
+            ctx_key = key[len("$ctx.") :]
+            if ctx_key in context:
+                return str(context[ctx_key])
+            return ""
+        if key.startswith("$env.") and allow_env:
+            env_key = key[len("$env.") :]
+            return os.getenv(env_key, "")
+        return ""
 
     return _RENDER_PATTERN.sub(_replace, template)
 

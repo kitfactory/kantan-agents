@@ -7,18 +7,31 @@ kantan-agents アーキテクチャ（v0.1）
 - Application/Domain 層
   - Trace メタデータ標準化ルール
   - Prompt/Agent の入力バリデーション
+  - Context/Policy の統合ルール
 - Infrastructure 層
   - OpenAI Agents SDK
   - kantan-llm（get_llm / Trace）
   - kantan-lab（分析対象としての依存）
+  - importlib.metadata（entry-point 収集）
 
 依存方向: Presentation/API → Application/Domain → Infrastructure
 
 主要インターフェース（I/F）
 
 - Agent
-  - __init__(name: str, instructions: str | Prompt, *, tools: list | None = None, renderer: Callable | None = None, metadata: dict | None = None, output_type: type | None = None, handoffs: list | None = None)
-  - run(input: str, *, render_vars: dict | None = None, trace_metadata: dict | None = None) -> Any
+  - __init__(name: str, instructions: str | Prompt, *, tools: list | None = None, renderer: Callable | None = None, metadata: dict | None = None, output_type: type | None = None, handoffs: list | None = None, allow_env: bool = False)
+  - run(input: str, *, context: dict | None = None) -> dict
+- Context
+  - policy: dict | None
+  - result: Any | None
+- PolicyMode
+  - ALLOW_ALL
+  - DENY_ALL
+- ToolProvider
+  - list_tools() -> list
+  - get_policy() -> dict
+- get_context_with_policy
+  - get_context_with_policy(mode_or_policy: PolicyMode | dict) -> dict
 - Prompt
   - name: str
   - version: str
@@ -30,10 +43,12 @@ kantan-agents アーキテクチャ（v0.1）
 - tracing API 再エクスポート
   - add_trace_processor(processor: Callable) -> None
   - set_trace_processors(processors: list[Callable]) -> None
+- entry-point 収集
+  - group: project.entry-points."kantan_agents.tools"
 
 Agent クラス I/F（メソッド別の引数説明）
 
-__init__(name: str, instructions: str | Prompt, *, tools: list | None = None, renderer: Callable | None = None, metadata: dict | None = None, output_type: type | None = None, handoffs: list | None = None)
+__init__(name: str, instructions: str | Prompt, *, tools: list | None = None, renderer: Callable | None = None, metadata: dict | None = None, output_type: type | None = None, handoffs: list | None = None, allow_env: bool = False)
 
 | 引数 | 型 | 必須 | 説明 |
 | --- | --- | --- | --- |
@@ -44,19 +59,22 @@ __init__(name: str, instructions: str | Prompt, *, tools: list | None = None, re
 | metadata | dict \| None | no | Agent に紐づく固定の付与情報。Trace へ付与する。 |
 | output_type | type \| None | no | structured output 用の出力型。Agents SDK の output_type に渡す。 |
 | handoffs | list \| None | no | handoff 可能な Agent インスタンスの一覧。Agents SDK の handoffs に渡す。 |
+| allow_env | bool | no | true の場合に $env 参照を許可する。 |
 
-run(input: str, *, render_vars: dict | None = None, trace_metadata: dict | None = None) -> Any
+run(input: str, *, context: dict | None = None) -> dict
 
 | 引数 | 型 | 必須 | 説明 |
 | --- | --- | --- | --- |
 | input | str | yes | Agent への入力。 |
-| render_vars | dict \| None | no | rendering に必要な情報。 |
-| trace_metadata | dict \| None | no | Trace に記録する付与情報。自動注入キーと衝突する場合は自動注入が優先。 |
+| context | dict \| None | no | rendering/policy/result を保持する Context。 |
 
-返値: Agents SDK の run と同じ返値。
+返値: context。
 
 データ設計（最小）
 
+- Context
+  - policy
+  - result
 - Trace metadata 標準キー
   - agent_name
   - prompt_name
@@ -64,13 +82,17 @@ run(input: str, *, render_vars: dict | None = None, trace_metadata: dict | None 
   - prompt_id
   - prompt_meta_*（スカラーのみ）
   - agent_run_id
+- Policy
+  - allow: list[str] | "*"
+  - deny: list[str] | "*"
+  - params: dict[str, dict]
 
 責務の分離
 
 - Agent は Agents SDK の利用を隠蔽せず、Trace のメタデータ整形に集中する。
 - Prompt は kantan-lab 管理前提の最小モデルとし、管理機能は持たない。
 - Trace への書き込み自体は kantan-llm に委譲し、Agent はメタデータの付与のみを担当する。
-- 標準の renderer は {{ }} 形式で変数をレンダリングする。
+- 標準の renderer は {{ }} 形式で変数をレンダリングし、$ctx/$env を扱う。
 - structured output / rubric は generation span として Trace に記録する。
 
 ログ/エラー方針

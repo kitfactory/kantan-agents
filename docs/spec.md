@@ -14,7 +14,7 @@ kantan-agents 仕様（v0.1）
 - When: kantan-agents の set_trace_processors を呼び出す
 - Then: Agents SDK の set_trace_processors と同等に振る舞い、例外/引数の扱いは同一である
 
-2. Agent クラス（F-02/F-03）
+2. Agent クラス（F-02/F-03/F-10）
 
 2.1. Agent を生成したとき、instructions を必須として保持する（F-02）
 
@@ -22,20 +22,21 @@ kantan-agents 仕様（v0.1）
 - When: Agent を生成する
 - Then: instructions は必須として保持され、指定が無い場合はエラーとする
 
-2.2. Agent を生成したとき、renderer/metadata/output_type/handoffs を任意で受け入れる（F-02）
+2.2. Agent を生成したとき、tools/renderer/metadata/output_type/handoffs/allow_env を任意で受け入れる（F-02/F-10）
 
-- Given: renderer と metadata と output_type と handoffs が任意で指定される
+- Given: tools と renderer と metadata と output_type と handoffs と allow_env が任意で指定される
 - When: Agent を生成する
-- Then: renderer は任意として保持し、metadata は保持する
+- Then: tools は Agents SDK の tools に渡す
+- And: renderer は任意として保持し、metadata は保持する
 - And: output_type は Agents SDK の output_type に渡す
 - And: handoffs は Agents SDK の handoffs に渡す
+- And: allow_env はテンプレートで $env を利用できるかどうかを制御する
 
 2.3. Prompt を指定して run したとき、Trace に標準メタデータを自動注入する（F-03/F-05）
 
 - Given: instructions が Prompt である
 - When: Agent.run を呼び出す
 - Then: Trace metadata に標準キーを自動注入する
-- And: trace_metadata に同名キーがある場合は自動注入値で上書きする
 
 2.4. instructions が str の場合に run したとき、最小の標準メタデータを注入する（F-03/F-05）
 
@@ -45,20 +46,26 @@ kantan-agents 仕様（v0.1）
 - And: prompt_name は agent 名から取得する
 - And: prompt_id は無指定の場合にハッシュ値を使う
 
-2.5. render_vars と trace_metadata を受け取ったとき、それぞれの用途で扱う（F-03）
+2.5. context を指定して run したとき、レンダリングと policy と結果格納に用いる（F-10）
 
-- Given: render_vars と trace_metadata が指定される
+- Given: context が指定される
 - When: Agent.run を呼び出す
-- Then: render_vars はレンダリングにのみ使用される
-- And: trace_metadata は Trace に記録する付与情報として扱う
+- Then: context はレンダリング変数と policy の参照に使用される
+- And: context.result に Agents SDK の返値を格納する
 
-2.7. Agent.run の返値は Agents SDK と同一とする（F-03）
+2.6. context を指定せずに run したとき、context を生成する（F-10）
 
-- Given: Agents SDK が利用可能である
+- Given: context が指定されない
 - When: Agent.run を呼び出す
-- Then: Agents SDK の run と同じ返値を返す
+- Then: Agent 内で context を生成して利用する
 
-2.6. Prompt.meta を展開するとき、スカラー値のみを採用する（F-03/F-05）
+2.7. Agent.run の返値は context とする（F-10）
+
+- Given: context を使用して Agent.run を呼び出す
+- When: Agent.run が完了する
+- Then: context を返す
+
+2.8. Prompt.meta を展開するとき、スカラー値のみを採用する（F-03/F-05）
 
 - Given: Prompt.meta に複数型の値が含まれる
 - When: Trace metadata へ prompt_meta_* を展開する
@@ -131,6 +138,64 @@ kantan-agents 仕様（v0.1）
 - Given: Trace を分析したい
 - When: ドキュメントを参照する
 - Then: 標準メタデータキー一覧が明記されている
+
+8. Context/Policy（F-10）
+
+8.1. テンプレートで $ctx と $env を利用できる（F-10）
+
+- Given: instructions のレンダリングが行われる
+- When: テンプレート内で $ctx.xxx を参照する
+- Then: context に含まれる値を参照する
+- And: 未定義参照は空文字として扱う
+- And: allow_env が True の場合に限り $env.ENV_NAME を参照できる
+
+8.2. policy は allow/deny/params で構成する（F-10）
+
+- Given: context.policy が指定される
+- When: policy を参照する
+- Then: policy は allow/deny/params の 3 要素で構成する
+- And: allow/deny は "*" を指定できる
+- And: allow/deny が競合する場合は deny を優先する
+
+8.3. policy.params は JSON Schema 互換の最小サブセットを用いる（F-10）
+
+- Given: policy.params を指定する
+- When: tool パラメータの検証に利用する
+- Then: type/enum/minLength/maxLength/pattern/minimum/maximum を利用できる
+
+8.4. get_context_with_policy は定数値またはカスタム policy を受け付ける（F-10）
+
+- Given: PolicyMode（ALLOW_ALL/DENY_ALL）または policy dict を渡す
+- When: get_context_with_policy を呼び出す
+- Then: policy を含む context を返す
+
+9. Tool Policy 収集（F-11）
+
+9.1. entry-point から tool/policy を収集する（F-11）
+
+- Given: project.entry-points."kantan_agents.tools" が定義される
+- When: Agent が tool/policy を収集する
+- Then: entry-point から provider を取得して tool/policy を収集する
+
+9.2. tool 由来 policy と明示 policy を統合する（F-11）
+
+- Given: tool 由来 policy と明示 policy が存在する
+- When: policy を統合する
+- Then: 明示 policy を優先する
+- And: allow/deny は union で統合する
+- And: params は tool 名ごとに merge する
+
+9.3. 基本ポリシーと tool 由来 policy を統合する（F-11）
+
+- Given: 基本ポリシーと tool 由来 policy が存在する
+- When: policy を統合する
+- Then: tool 由来 policy を優先する
+
+9.4. provider は tool と policy を取得できる I/F を提供する（F-11）
+
+- Given: entry-point から provider を取得する
+- When: tool/policy を収集する
+- Then: provider は list_tools と get_policy を提供する
 
 入力バリデーション
 

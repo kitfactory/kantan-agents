@@ -1,16 +1,16 @@
 from kantan_agents.utils import flatten_prompt_meta, render_template
 
 
-def test_render_template_uses_double_braces():
-    template = "Hello {{ name }}!"
+def test_render_template_uses_ctx():
+    template = "Hello {{ $ctx.name }}!"
     rendered = render_template(template, {"name": "world"})
     assert rendered == "Hello world!"
 
 
-def test_render_template_keeps_missing_keys():
-    template = "Hello {{ name }}!"
+def test_render_template_uses_empty_string_for_missing_keys():
+    template = "Hello {{ $ctx.name }}!"
     rendered = render_template(template, {"other": "x"})
-    assert rendered == "Hello {{ name }}!"
+    assert rendered == "Hello !"
 
 
 def test_flatten_prompt_meta_filters_scalars():

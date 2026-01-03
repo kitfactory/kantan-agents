@@ -15,6 +15,16 @@ kantan-agents 作業計画（v0.1）
 - [ ] F-06: rubric structured output の記録テストを実行する（gpt-5.1-mini の利用可否に依存）
 - [x] F-09: RUBRIC schema 定数を実装する
 - [x] F-07: 最小利用ドキュメントを作成する（tracing 設定 → Agent 作成 → run → SQLite 検索）
+- [x] F-10: Context/Policy の仕様更新（run/テンプレート/PolicyMode）
+- [x] F-10: Context/Policy の設計反映（Agent/renderer/get_context_with_policy）
+- [x] F-10: Context/Policy のテストを実行する
+- [x] F-11: entry-point による tool/policy 収集仕様を更新する
+- [x] F-11: tool/policy 収集の実装と統合ルールを確認する
+- [x] F-11: tool/policy 収集のテストを実行する
+- [x] F-10/F-11: usage/tutorial を Context/Policy に合わせて更新する
+
+<details>
+<summary>補足</summary>
 
 テスト方針メモ
 
@@ -32,3 +42,4 @@ kantan-agents 作業計画（v0.1）
 - [x] 実装完成後、実装に合わせたチュートリアルを作成する
 - [x] 単元を段階的に分け、各単元を「利用ケース → 実現方法 → ソースコード」で構成する
 - [x] 最終単元はツールを使ったエージェントで評価（rubric）とプロンプト分析の事例にする
+</details>

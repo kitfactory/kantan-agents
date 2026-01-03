@@ -16,8 +16,8 @@ kantan-agents は OpenAI Agents SDK の薄いラッパで、観測性と評価�
 from kantan_agents import Agent
 
 agent = Agent(name="basic-agent", instructions="You are a helpful assistant.")
-result = agent.run("Hello")
-print(result.final_output)
+context = agent.run("Hello")
+print(context["result"].final_output)
 ```
 
 ## ドキュメント

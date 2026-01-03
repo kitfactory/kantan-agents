@@ -48,13 +48,20 @@ kantan-agents 要件定義（v0.1）
 | F-07 | 最小利用ドキュメント | tracing 設定 → Agent 作成 → run → SQLite 検索 | kantan-llm | v0.1 |
 | F-08 | Handoff のサポート | Agent インスタンス間の handoff を利用可能にする | OpenAI Agents SDK | v0.1 |
 | F-09 | RUBRIC schema 定数 | output_type=RUBRIC で rubric structured output を簡易化 | kantan-llm | v0.2 |
+| F-10 | Context/Policy 機能 | Context の返却、policy 制御、テンプレート変数/環境変数対応 | OpenAI Agents SDK | v0.2 |
+| F-11 | Tool Policy 収集 | entry-point から tool/policy を収集して統合 | importlib.metadata | v0.2 |
 
 主要な仕様メモ
 
 - Agent.run
-  - シグネチャ: run(input: str, *, render_vars: dict|None=None, trace_metadata: dict|None=None) -> result
-  - render_vars は rendering に必要な情報
-  - trace_metadata は trace に記録する付与情報
+  - シグネチャ: run(input: str, *, context: dict|None=None) -> context
+  - context は rendering/policy/result を含む辞書
+  - context 未指定時は Agent 内で生成する
+  - context.result は Agents SDK の返値
+- テンプレート変数
+  - {{ }} 内で $ctx.xxx と $env.ENV_NAME を展開する
+  - 未定義参照は空文字
+  - $env はコンストラクタで opt-in（default False）
 - Trace metadata 自動注入（Prompt 指定時）
   - agent_name
   - prompt_name
@@ -62,11 +69,20 @@ kantan-agents 要件定義（v0.1）
   - prompt_id（Prompt が id を持てばそれ、なければ SHA-256 で hash(prompt.text)）
   - prompt_meta_*（Prompt.meta をフラットに展開、スカラーのみ）
   - agent_run_id（run ごとに一意）
-  - trace_metadata に同名キーがある場合は自動注入値で上書きする
 - instructions が str の場合は注入最小（任意）
   - agent_name と agent_run_id は入れる
   - prompt_name は agent 名から取る
   - prompt_id がない場合は SHA-256 のハッシュにする
+- Policy
+  - 形式: allow/deny/params（階層なし）
+  - allow/deny は "*" を許可
+  - 競合時は deny 優先
+  - params は JSON Schema 互換の最小サブセット
+- Policy レイヤーと統合順序
+  - 基本ポリシー → tool 由来ポリシー → 明示ポリシー
+  - allow/deny は union、params は tool 名ごとに merge
+- Tool Policy 収集
+  - project.entry-points."kantan_agents.tools" から provider を収集する
 - Prompt 型（kantan-lab 側で管理）
   - name: str
   - version: str

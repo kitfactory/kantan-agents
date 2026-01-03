@@ -29,11 +29,8 @@ prompt = Prompt(
 )
 
 agent = Agent(name="support-agent", instructions=prompt)
-result = agent.run(
-    "Explain trace metadata in one sentence.",
-    trace_metadata={"session_id": "sess-001"},
-)
-print(result.final_output)
+context = agent.run("Explain trace metadata in one sentence.")
+print(context["result"].final_output)
 ```
 
 3. SQLite 検索
@@ -60,5 +57,5 @@ print([dict(row) for row in spans])
 
 補足
 
-- `trace_metadata` に `session_id` などを渡すと、後続分析でフィルタしやすくなる。
+- 固定の Trace メタデータは Agent の `metadata` に設定する。
 - 生成結果の structured output や rubric は span に保存される（SQLite の `structured_json` / `rubric_json` を参照）。

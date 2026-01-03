@@ -1,6 +1,6 @@
 [project]
 name = "kantan-agents"
-version = "0.1.0"
+version = "0.1.1"
 description = "kantan-agents is a thin, opinionated wrapper around the OpenAI Agents SDK that makes observability and evaluation \u201cjust happen\u201d by default."
 readme = "README.md"
 requires-python = ">=3.10"

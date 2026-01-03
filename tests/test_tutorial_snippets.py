@@ -15,14 +15,14 @@ def test_tutorial_snippets_smoke(tmp_path):
 
     try:
         agent = Agent(name="basic-agent", instructions="You are a helpful assistant.")
-        result = agent.run("Hello")
-        assert result.final_output is not None
+        context = agent.run("Hello")
+        assert context["result"].final_output is not None
 
         tracer = SQLiteTracer(str(tmp_path / "traces.sqlite3"))
         set_trace_processors([tracer])
         agent = Agent(name="trace-agent", instructions="Answer briefly.")
-        result = agent.run("Explain trace metadata in one sentence.")
-        assert result.final_output is not None
+        context = agent.run("Explain trace metadata in one sentence.")
+        assert context["result"].final_output is not None
 
         prompt = Prompt(
             name="qa",
@@ -31,11 +31,8 @@ def test_tutorial_snippets_smoke(tmp_path):
             meta={"variant": "A"},
         )
         agent = Agent(name="prompted-agent", instructions=prompt)
-        result = agent.run(
-            "Explain tracing in one sentence.",
-            trace_metadata={"session_id": "sess-001"},
-        )
-        assert result.final_output is not None
+        context = agent.run("Explain tracing in one sentence.")
+        assert context["result"].final_output is not None
 
         class Summary(BaseModel):
             title: str
@@ -46,8 +43,8 @@ def test_tutorial_snippets_smoke(tmp_path):
             instructions="Summarize the input.",
             output_type=Summary,
         )
-        result = agent.run("Summarize the release notes.")
-        assert isinstance(result.final_output, Summary)
+        context = agent.run("Summarize the release notes.")
+        assert isinstance(context["result"].final_output, Summary)
 
         booking_agent = Agent(name="booking", instructions="Handle booking tasks.")
         refund_agent = Agent(name="refund", instructions="Handle refund tasks.")
@@ -56,8 +53,8 @@ def test_tutorial_snippets_smoke(tmp_path):
             instructions="Route tasks to specialists.",
             handoffs=[booking_agent, refund_agent],
         )
-        result = manager.run("I need a refund for last week's order.")
-        assert result.final_output is not None
+        context = manager.run("I need a refund for last week's order.")
+        assert context["result"].final_output is not None
 
         def word_count(text: str) -> int:
             return len(text.split())
@@ -68,8 +65,8 @@ def test_tutorial_snippets_smoke(tmp_path):
             tools=[word_count],
             output_type=RUBRIC,
         )
-        result = agent.run("Assess this sentence: 'Tracing enables analysis.'")
-        assert isinstance(result.final_output, RUBRIC)
+        context = agent.run("Assess this sentence: 'Tracing enables analysis.'")
+        assert isinstance(context["result"].final_output, RUBRIC)
     except BadRequestError as exc:
         if "model_not_found" in str(exc) or "does not exist" in str(exc):
             pytest.skip("gpt-5-mini is not available for this API key")
