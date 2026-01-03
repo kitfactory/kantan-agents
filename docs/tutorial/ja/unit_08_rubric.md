@@ -6,34 +6,41 @@ kantan-agents チュートリアル 単元8（v0.1）
 
 概要
 
-この単元ではツール実行と rubric 出力を組み合わせる。rubric は Trace に保存されるため、評価の蓄積と比較に使える。
+この単元では一度生成した結果を、別の評価プロンプトで rubric 形式に評価する。いわゆる LLM-as-a-judge のパターンであり、rubric は Trace に保存されるため、評価の蓄積と比較に使える。
 
 ステップ
 
-- ツール関数を用意する。
-- output_type に RUBRIC を指定する。
-- run して rubric を取得する。
+- 生成用の Prompt で結果を作る。
+- 評価用の Prompt で rubric を出力する。
+- rubric を取得する。
 
 実現方法
 
-- tools と output_type=RUBRIC を併用する。
-- rubric の内容は final_output から読める。
+- 生成と評価を別の Agent で行う。
+- 評価側は output_type=RUBRIC を使う。
 
 ソースコード
 ```python
-from kantan_agents import Agent, PolicyMode, RUBRIC, get_context_with_policy
+from kantan_agents import Agent, PolicyMode, Prompt, RUBRIC, get_context_with_policy
 
-
-def word_count(text: str) -> int:
-    return len(text.split())
-
-agent = Agent(
-    name="evaluator",
-    instructions="Use word_count and then output a rubric with score and comments.",
-    tools=[word_count],
-    output_type=RUBRIC,
+generator_prompt = Prompt(
+    name="A",
+    version="v1",
+    text="Write a short, clear explanation of trace metadata in one sentence.",
 )
+generator = Agent(name="generator", instructions=generator_prompt)
+
 context = get_context_with_policy(PolicyMode.RECOMMENDED)
-context = agent.run("Assess this sentence: 'Tracing enables analysis.'", context)
-print(context["result"].final_output)
+context = generator.run("Explain trace metadata.", context)
+generated = context["result"].final_output
+
+judge_prompt = Prompt(
+    name="A-judge",
+    version="v1",
+    text="Evaluate the answer and output a rubric with score (0-1) and comments.",
+)
+judge = Agent(name="judge", instructions=judge_prompt, output_type=RUBRIC)
+judge_context = get_context_with_policy(PolicyMode.RECOMMENDED)
+judge_context = judge.run(str(generated), judge_context)
+print(judge_context["result"].final_output)
 ```
