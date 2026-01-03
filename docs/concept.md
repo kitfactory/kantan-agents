@@ -50,13 +50,17 @@ kantan-agents 要件定義（v0.1）
 | F-09 | RUBRIC schema 定数 | output_type=RUBRIC で rubric structured output を簡易化 | kantan-llm | v0.2 |
 | F-10 | Context/Policy 機能 | Context の返却、policy 制御、テンプレート変数/環境変数対応 | OpenAI Agents SDK | v0.2 |
 | F-11 | Tool Policy 収集 | entry-point から tool/policy を収集して統合 | importlib.metadata | v0.2 |
+| F-12 | History 機能 | 入力/応答の履歴を context に保持 | OpenAI Agents SDK | v0.2 |
+| F-13 | output_dest 機能 | structured output を context の任意キーに保存 | OpenAI Agents SDK | v0.2 |
 
 主要な仕様メモ
 
 - Agent.run
-  - シグネチャ: run(input: str, *, context: dict|None=None) -> context
+  - シグネチャ: run(input: str, context: dict) -> context
   - context は rendering/policy/result を含む辞書
-  - context 未指定時は Agent 内で生成する
+  - context が空の dict の場合は Agent 内で補完する
+  - history は context["history"] に配列として保持する
+  - output_dest 指定時は structured output を context に保存する
   - context.result は Agents SDK の返値
 - テンプレート変数
   - {{ }} 内で $ctx.xxx と $env.ENV_NAME を展開する
@@ -83,6 +87,9 @@ kantan-agents 要件定義（v0.1）
   - allow/deny は union、params は tool 名ごとに merge
 - Tool Policy 収集
   - project.entry-points."kantan_agents.tools" から provider を収集する
+- History
+  - Agent の history 引数で保存数を制御する（default 50）
+  - history=0 の場合は保存しない
 - Prompt 型（kantan-lab 側で管理）
   - name: str
   - version: str

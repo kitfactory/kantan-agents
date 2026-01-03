@@ -17,9 +17,10 @@ set_trace_processors([tracer])
 2. Agent 作成と run
 
 Prompt を使い、Trace metadata に prompt/agent/run の標準キーが残るようにする。
+Prompt の情報は Trace metadata に自動注入される。
 
 ```python
-from kantan_agents import Agent, Prompt
+from kantan_agents import Agent, PolicyMode, Prompt, get_context_with_policy
 
 prompt = Prompt(
     name="qa",
@@ -29,7 +30,8 @@ prompt = Prompt(
 )
 
 agent = Agent(name="support-agent", instructions=prompt)
-context = agent.run("Explain trace metadata in one sentence.")
+context = get_context_with_policy(PolicyMode.RECOMMENDED)
+context = agent.run("Explain trace metadata in one sentence.", context)
 print(context["result"].final_output)
 ```
 
@@ -59,3 +61,8 @@ print([dict(row) for row in spans])
 
 - 固定の Trace メタデータは Agent の `metadata` に設定する。
 - 生成結果の structured output や rubric は span に保存される（SQLite の `structured_json` / `rubric_json` を参照）。
+- context の辞書を渡す。空の辞書でも Agent が tool/provider の policy を統合する。
+- get_context_with_policy(PolicyMode.RECOMMENDED) は tool/provider の policy を基準にする。
+- history が有効な場合は context["history"] に入力/応答が保存される。
+- output_dest を指定すると structured output が context の指定キーに保存される。
+- output_dest は既存キーを上書きする。structured output が dict 化できない場合は保存されない。

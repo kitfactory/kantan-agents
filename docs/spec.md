@@ -14,7 +14,7 @@ kantan-agents 仕様（v0.1）
 - When: kantan-agents の set_trace_processors を呼び出す
 - Then: Agents SDK の set_trace_processors と同等に振る舞い、例外/引数の扱いは同一である
 
-2. Agent クラス（F-02/F-03/F-10）
+2. Agent クラス（F-02/F-03/F-10/F-12/F-13）
 
 2.1. Agent を生成したとき、instructions を必須として保持する（F-02）
 
@@ -22,15 +22,17 @@ kantan-agents 仕様（v0.1）
 - When: Agent を生成する
 - Then: instructions は必須として保持され、指定が無い場合はエラーとする
 
-2.2. Agent を生成したとき、tools/renderer/metadata/output_type/handoffs/allow_env を任意で受け入れる（F-02/F-10）
+2.2. Agent を生成したとき、tools/renderer/metadata/output_type/handoffs/allow_env/history/output_dest を任意で受け入れる（F-02/F-10/F-12/F-13）
 
-- Given: tools と renderer と metadata と output_type と handoffs と allow_env が任意で指定される
+- Given: tools と renderer と metadata と output_type と handoffs と allow_env と history と output_dest が任意で指定される
 - When: Agent を生成する
 - Then: tools は Agents SDK の tools に渡す
 - And: renderer は任意として保持し、metadata は保持する
 - And: output_type は Agents SDK の output_type に渡す
 - And: handoffs は Agents SDK の handoffs に渡す
 - And: allow_env はテンプレートで $env を利用できるかどうかを制御する
+- And: history は context に保存する履歴件数を制御する
+- And: output_dest は structured output を格納する context のキー名を制御する
 
 2.3. Prompt を指定して run したとき、Trace に標準メタデータを自動注入する（F-03/F-05）
 
@@ -53,11 +55,11 @@ kantan-agents 仕様（v0.1）
 - Then: context はレンダリング変数と policy の参照に使用される
 - And: context.result に Agents SDK の返値を格納する
 
-2.6. context を指定せずに run したとき、context を生成する（F-10）
+2.6. context が空の dict の場合、context を補完する（F-10）
 
-- Given: context が指定されない
+- Given: context が空の dict である
 - When: Agent.run を呼び出す
-- Then: Agent 内で context を生成して利用する
+- Then: Agent 内で policy と result を補完して利用する
 
 2.7. Agent.run の返値は context とする（F-10）
 
@@ -165,7 +167,7 @@ kantan-agents 仕様（v0.1）
 
 8.4. get_context_with_policy は定数値またはカスタム policy を受け付ける（F-10）
 
-- Given: PolicyMode（ALLOW_ALL/DENY_ALL）または policy dict を渡す
+- Given: PolicyMode（ALLOW_ALL/DENY_ALL/RECOMMENDED）または policy dict を渡す
 - When: get_context_with_policy を呼び出す
 - Then: policy を含む context を返す
 
@@ -196,6 +198,37 @@ kantan-agents 仕様（v0.1）
 - Given: entry-point から provider を取得する
 - When: tool/policy を収集する
 - Then: provider は list_tools と get_policy を提供する
+
+10. History（F-12）
+
+10.1. history を指定して run したとき、入力/応答を context.history に保存する（F-12）
+
+- Given: history が 1 以上である
+- When: Agent.run を呼び出す
+- Then: context.history に user/assistant の入力と応答を追加する
+- And: context.history は dict の配列で role/text を持つ
+
+10.2. history 上限を超えたとき、古い履歴から削除する（F-12）
+
+- Given: context.history が上限を超える
+- When: Agent.run が完了する
+- Then: 古い履歴から削除して上限以内に保つ
+- And: 上限は context.history の要素数で判断する
+
+10.3. history が 0 の場合、履歴を保存しない（F-12）
+
+- Given: history が 0 である
+- When: Agent.run を呼び出す
+- Then: context.history を更新しない
+
+11. output_dest（F-13）
+
+11.1. output_dest を指定した場合、structured output を context に保存する（F-13）
+
+- Given: output_dest が指定され、structured output が dict として取得できる
+- When: Agent.run が完了する
+- Then: context[output_dest] に structured output を保存する
+- And: context[output_dest] が存在する場合は上書きする
 
 入力バリデーション
 

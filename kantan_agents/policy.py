@@ -8,6 +8,7 @@ from typing import Any, Mapping
 class PolicyMode(Enum):
     ALLOW_ALL = "allow_all"
     DENY_ALL = "deny_all"
+    RECOMMENDED = "recommended"
 
 
 def get_context_with_policy(mode_or_policy: PolicyMode | Mapping[str, Any]) -> dict[str, Any]:
@@ -23,6 +24,8 @@ def policy_from_mode(mode: PolicyMode) -> dict[str, Any]:
         return {"allow": "*", "deny": [], "params": {}}
     if mode is PolicyMode.DENY_ALL:
         return {"allow": [], "deny": "*", "params": {}}
+    if mode is PolicyMode.RECOMMENDED:
+        return {"allow": None, "deny": None, "params": {}}
     raise ValueError(f"Unknown PolicyMode: {mode}")
 
 

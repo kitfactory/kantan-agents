@@ -7,6 +7,9 @@ kantan-agents is a thin, opinionated wrapper around the OpenAI Agents SDK that m
 - Re-exports the Agents SDK tracing API.
 - Provides an Agent wrapper that injects standardized Trace metadata.
 - Provides a minimal Prompt model for versioned instructions.
+- Injects Prompt metadata into Trace metadata when Prompt is used.
+- Stores recent input/output pairs in context history.
+- Supports output_dest to store structured output under a custom context key.
 - Supports structured outputs via `output_type` and a `RUBRIC` schema helper.
 - Supports handoffs between Agent instances.
 
@@ -16,7 +19,7 @@ kantan-agents is a thin, opinionated wrapper around the OpenAI Agents SDK that m
 from kantan_agents import Agent
 
 agent = Agent(name="basic-agent", instructions="You are a helpful assistant.")
-context = agent.run("Hello")
+context = agent.run("Hello", {})
 print(context["result"].final_output)
 ```
 

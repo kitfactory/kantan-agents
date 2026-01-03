@@ -19,6 +19,10 @@ def test_get_context_with_policy_mode():
     assert deny_context["policy"]["allow"] == []
     assert deny_context["policy"]["deny"] == "*"
 
+    recommended_context = get_context_with_policy(PolicyMode.RECOMMENDED)
+    assert recommended_context["policy"]["allow"] is None
+    assert recommended_context["policy"]["deny"] is None
+
 
 def test_merge_policies_unions_allow_and_deny():
     base = {"allow": ["a"], "deny": ["x"], "params": {"t": {"q": {"type": "string"}}}}

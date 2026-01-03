@@ -7,6 +7,9 @@ kantan-agents は OpenAI Agents SDK の薄いラッパで、観測性と評価�
 - Agents SDK tracing API の再エクスポート
 - Trace metadata を標準化して自動注入する Agent
 - バージョン付き指示のための最小 Prompt モデル
+- Prompt 利用時に Trace metadata へ Prompt 情報を自動注入する
+- 入力/応答の履歴を context の history に保存する
+- structured output を output_dest 指定で context に保存できる
 - structured output と `RUBRIC` schema ヘルパ
 - Agent インスタンス間の handoff
 
@@ -16,7 +19,7 @@ kantan-agents は OpenAI Agents SDK の薄いラッパで、観測性と評価�
 from kantan_agents import Agent
 
 agent = Agent(name="basic-agent", instructions="You are a helpful assistant.")
-context = agent.run("Hello")
+context = agent.run("Hello", {})
 print(context["result"].final_output)
 ```
 

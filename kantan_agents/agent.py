@@ -46,6 +46,8 @@ class Agent:
         output_type: type | None = None,
         handoffs: list | None = None,
         allow_env: bool = False,
+        history: int = 50,
+        output_dest: str | None = None,
     ) -> None:
         if instructions is None:
             raise ValueError("[kantan-agents][E1] instructions is required")
@@ -59,6 +61,8 @@ class Agent:
         self._output_type = output_type
         self._handoffs = list(handoffs) if handoffs is not None else []
         self._allow_env = allow_env
+        self._history = history
+        self._output_dest = output_dest
 
     @property
     def name(self) -> str:
@@ -67,15 +71,13 @@ class Agent:
     def run(
         self,
         input: str,
-        *,
-        context: dict | None = None,
+        context: dict | None,
     ) -> dict:
         return asyncio.run(self._arun(input, context=context))
 
     async def _arun(
         self,
         input: str,
-        *,
         context: dict | None,
     ) -> dict:
         context = self._prepare_context(context)
@@ -91,6 +93,8 @@ class Agent:
             run_config=run_config,
             hooks=hooks,
         )
+        self._store_output_dest(context, run_result)
+        self._append_history(context, input, run_result)
         context["result"] = run_result
         return context
 
@@ -176,14 +180,40 @@ class Agent:
         )
 
     def _prepare_context(self, context: dict | None) -> dict:
-        if context is None:
-            context = {}
-        if not isinstance(context, dict):
+        if context is None or not isinstance(context, dict):
             raise ValueError("Context must be a dict")
         resolved_policy = self._resolve_policy(context.get("policy"))
         context["policy"] = resolved_policy
         context.setdefault("result", None)
+        if self._history > 0:
+            history = context.setdefault("history", [])
+            if not isinstance(history, list):
+                raise ValueError("Context history must be a list")
         return context
+
+    def _append_history(self, context: dict, user_input: str, run_result: Any) -> None:
+        if self._history <= 0:
+            return
+        history = context.setdefault("history", [])
+        if not isinstance(history, list):
+            raise ValueError("Context history must be a list")
+        history.append({"role": "user", "text": user_input})
+        if run_result is None:
+            output_text = ""
+        else:
+            final_output = getattr(run_result, "final_output", run_result)
+            output_text = "" if final_output is None else str(final_output)
+        history.append({"role": "assistant", "text": output_text})
+        if len(history) > self._history:
+            del history[:-self._history]
+
+    def _store_output_dest(self, context: dict, run_result: Any) -> None:
+        if not self._output_dest:
+            return
+        output_value = _structured_output(run_result)
+        if output_value is None:
+            return
+        context[self._output_dest] = output_value
 
     def _resolve_policy(self, explicit_policy: Mapping[str, Any] | PolicyMode | None) -> dict[str, Any]:
         merged = merge_policies(None, self._provider_policy)
@@ -255,6 +285,21 @@ def _output_payload(output: Any, output_type: type | None) -> Any | None:
         return {"rubric": output_dict}
 
     return output_dict
+
+
+def _structured_output(run_result: Any) -> dict | None:
+    if run_result is None:
+        return None
+    output = getattr(run_result, "final_output", run_result)
+    if output is None:
+        return None
+    if BaseModel is not None and isinstance(output, BaseModel):
+        return output.model_dump()
+    if hasattr(output, "dict") and callable(getattr(output, "dict")):
+        return output.dict()
+    if isinstance(output, dict):
+        return output
+    return None
 
 
 def _merge_tools(provider_tools: Sequence | None, tools: Sequence | None) -> list:

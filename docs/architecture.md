@@ -19,14 +19,15 @@ kantan-agents アーキテクチャ（v0.1）
 主要インターフェース（I/F）
 
 - Agent
-  - __init__(name: str, instructions: str | Prompt, *, tools: list | None = None, renderer: Callable | None = None, metadata: dict | None = None, output_type: type | None = None, handoffs: list | None = None, allow_env: bool = False)
-  - run(input: str, *, context: dict | None = None) -> dict
+  - __init__(name: str, instructions: str | Prompt, *, tools: list | None = None, renderer: Callable | None = None, metadata: dict | None = None, output_type: type | None = None, handoffs: list | None = None, allow_env: bool = False, history: int = 50, output_dest: str | None = None)
+  - run(input: str, context: dict) -> dict
 - Context
   - policy: dict | None
   - result: Any | None
 - PolicyMode
   - ALLOW_ALL
   - DENY_ALL
+  - RECOMMENDED
 - ToolProvider
   - list_tools() -> list
   - get_policy() -> dict
@@ -48,7 +49,7 @@ kantan-agents アーキテクチャ（v0.1）
 
 Agent クラス I/F（メソッド別の引数説明）
 
-__init__(name: str, instructions: str | Prompt, *, tools: list | None = None, renderer: Callable | None = None, metadata: dict | None = None, output_type: type | None = None, handoffs: list | None = None, allow_env: bool = False)
+__init__(name: str, instructions: str | Prompt, *, tools: list | None = None, renderer: Callable | None = None, metadata: dict | None = None, output_type: type | None = None, handoffs: list | None = None, allow_env: bool = False, history: int = 50, output_dest: str | None = None)
 
 | 引数 | 型 | 必須 | 説明 |
 | --- | --- | --- | --- |
@@ -60,13 +61,15 @@ __init__(name: str, instructions: str | Prompt, *, tools: list | None = None, re
 | output_type | type \| None | no | structured output 用の出力型。Agents SDK の output_type に渡す。 |
 | handoffs | list \| None | no | handoff 可能な Agent インスタンスの一覧。Agents SDK の handoffs に渡す。 |
 | allow_env | bool | no | true の場合に $env 参照を許可する。 |
+| history | int | no | context に保存する履歴件数。0 の場合は保存しない。 |
+| output_dest | str \| None | no | structured output を保存する context のキー名。 |
 
-run(input: str, *, context: dict | None = None) -> dict
+run(input: str, context: dict) -> dict
 
 | 引数 | 型 | 必須 | 説明 |
 | --- | --- | --- | --- |
 | input | str | yes | Agent への入力。 |
-| context | dict \| None | no | rendering/policy/result を保持する Context。 |
+| context | dict | yes | rendering/policy/result を保持する Context。 |
 
 返値: context。
 
@@ -75,6 +78,10 @@ run(input: str, *, context: dict | None = None) -> dict
 - Context
   - policy
   - result
+  - history
+    - role
+    - text
+  - output_dest 指定時の出力キー
 - Trace metadata 標準キー
   - agent_name
   - prompt_name

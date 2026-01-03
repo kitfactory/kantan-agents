@@ -12,7 +12,7 @@ kantan-agents 作業計画（v0.1）
 - [x] F-08: handoffs を Agents SDK に受け渡す実装を確認する
 - [x] F-08: handoffs のテストを実行する
 - [x] F-06: judge() ヘルパの入出力連携を実装する
-- [ ] F-06: rubric structured output の記録テストを実行する（gpt-5.1-mini の利用可否に依存）
+- [x] F-06: rubric structured output の記録テストを実行する（gpt-5.1-mini の利用可否に依存）
 - [x] F-09: RUBRIC schema 定数を実装する
 - [x] F-07: 最小利用ドキュメントを作成する（tracing 設定 → Agent 作成 → run → SQLite 検索）
 - [x] F-10: Context/Policy の仕様更新（run/テンプレート/PolicyMode）
@@ -22,6 +22,12 @@ kantan-agents 作業計画（v0.1）
 - [x] F-11: tool/policy 収集の実装と統合ルールを確認する
 - [x] F-11: tool/policy 収集のテストを実行する
 - [x] F-10/F-11: usage/tutorial を Context/Policy に合わせて更新する
+- [x] F-12: history 機能の仕様更新（context/history/テンプレート）
+- [x] F-12: history 機能の設計反映（Agent/history）
+- [x] F-12: history のテストを実行する
+- [x] F-13: output_dest の仕様更新（context/output）
+- [x] F-13: output_dest の設計反映（Agent/output_dest）
+- [x] F-13: output_dest のテストを実行する
 
 <details>
 <summary>補足</summary>
