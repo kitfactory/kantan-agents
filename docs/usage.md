@@ -74,6 +74,7 @@ entry-point 由来の tool_rules 設定
 - `allow`/`deny` は union、`params` は tool 名ごとに merge。同名キーは上書き。
 - 利用側は `get_context_with_tool_rules(ToolRulesMode.RECOMMENDED)` で provider 由来の推奨設定を取り込み、必要に応じて `context["tool_rules"]` を更新する。
 - provider 由来の tool 名一覧や設定内容を確認する場合は `list_provider_tools()` と `get_provider_tool_rules()` を使う。
+- 実際に適用される tool_rules を確認したい場合は `get_effective_tool_rules()` を使う（tool_rules 引数が context より優先）。
 
 ```python
 from kantan_agents import Agent, ToolRulesMode, get_context_with_tool_rules
@@ -97,6 +98,16 @@ tool_names = list_provider_tools()
 tool_rules = get_provider_tool_rules()
 print(tool_names)
 print(tool_rules["params"])
+```
+
+```python
+from kantan_agents import ToolRulesMode, get_effective_tool_rules
+
+effective = get_effective_tool_rules(
+    context={"tool_rules": {"allow": ["a"], "deny": [], "params": {}}},
+    tool_rules=ToolRulesMode.RECOMMENDED,
+)
+print(effective)
 ```
 
 Context の最小テンプレート（渡す場合）
@@ -137,6 +148,7 @@ Context の最小テンプレート（渡す場合）
 | E15 | 文字列が pattern に一致するようにする。 |
 | E16 | 数値が minimum 以上になるようにする。 |
 | E17 | 数値が maximum 以下になるようにする。 |
+| E18 | tool_rules は dict を渡す。 |
 
 スニペット集
 

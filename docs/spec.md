@@ -224,6 +224,7 @@ kantan-agents 仕様（v0.1）
 - Given: provider 由来の tool_rules 設定と明示 tool_rules 設定が存在する
 - When: get_effective_tool_rules を呼び出す
 - Then: provider 由来の tool_rules 設定に明示 tool_rules 設定を統合した結果を返す
+- And: tool_rules 引数が context.tool_rules より優先される
 
 10. History（F-12）
 
@@ -276,6 +277,12 @@ kantan-agents 仕様（v0.1）
 - When: Prompt を生成する
 - Then: エラー E3 を返す
 
+7.4. context.tool_rules が dict 以外の場合はエラーとする（F-10）
+
+- Given: context.tool_rules が dict 以外である
+- When: Agent.run を呼び出す
+- Then: エラー E18 を返す
+
 エラー/メッセージ一覧
 
 | Error ID | メッセージ |
@@ -297,3 +304,4 @@ kantan-agents 仕様（v0.1）
 | E15 | [kantan-agents][E15] Tool parameter pattern mismatch: {tool_name}.{param_name} |
 | E16 | [kantan-agents][E16] Tool parameter minimum mismatch: {tool_name}.{param_name} |
 | E17 | [kantan-agents][E17] Tool parameter maximum mismatch: {tool_name}.{param_name} |
+| E18 | [kantan-agents][E18] Tool rules must be a dict |

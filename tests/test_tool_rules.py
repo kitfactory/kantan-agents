@@ -1,6 +1,6 @@
 import pytest
 
-from kantan_agents.agent import _validate_tool_input
+from kantan_agents.agent import Agent, _validate_tool_input
 from kantan_agents.tool_rules import (
     ToolRulesMode,
     get_context_with_tool_rules,
@@ -23,6 +23,19 @@ def test_get_context_with_tool_rules_mode():
     recommended_context = get_context_with_tool_rules(ToolRulesMode.RECOMMENDED)
     assert recommended_context["tool_rules"]["allow"] is None
     assert recommended_context["tool_rules"]["deny"] is None
+
+
+def test_get_context_with_tool_rules_rejects_invalid_type():
+    with pytest.raises(ValueError) as excinfo:
+        get_context_with_tool_rules("bad")
+    assert str(excinfo.value) == "[kantan-agents][E18] Tool rules must be a dict"
+
+
+def test_prepare_context_rejects_invalid_tool_rules():
+    agent = Agent(name="agent", instructions="hello")
+    with pytest.raises(ValueError) as excinfo:
+        agent._prepare_context({"tool_rules": "bad"})
+    assert str(excinfo.value) == "[kantan-agents][E18] Tool rules must be a dict"
 
 
 def test_merge_tool_rules_unions_allow_and_deny():
@@ -50,6 +63,12 @@ def test_is_tool_allowed_allows_star_except_denied():
 def test_normalize_tool_rules_params_non_mapping():
     normalized = normalize_tool_rules({"allow": [], "deny": [], "params": "bad"})
     assert normalized["params"] == {}
+
+
+def test_normalize_tool_rules_rejects_invalid_type():
+    with pytest.raises(ValueError) as excinfo:
+        normalize_tool_rules("bad")
+    assert str(excinfo.value) == "[kantan-agents][E18] Tool rules must be a dict"
 
 
 def test_validate_tool_params_checks_rules():

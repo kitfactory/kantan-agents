@@ -14,8 +14,10 @@ class ToolRulesMode(Enum):
 def get_context_with_tool_rules(mode_or_rules: ToolRulesMode | Mapping[str, Any]) -> dict[str, Any]:
     if isinstance(mode_or_rules, ToolRulesMode):
         rules = tool_rules_from_mode(mode_or_rules)
-    else:
+    elif isinstance(mode_or_rules, Mapping):
         rules = dict(mode_or_rules)
+    else:
+        raise ValueError("[kantan-agents][E18] Tool rules must be a dict")
     return {"tool_rules": rules, "result": None}
 
 
@@ -34,6 +36,8 @@ def normalize_tool_rules(rules: Mapping[str, Any] | ToolRulesMode | None) -> dic
         return {"allow": None, "deny": None, "params": {}}
     if isinstance(rules, ToolRulesMode):
         rules = tool_rules_from_mode(rules)
+    elif not isinstance(rules, Mapping):
+        raise ValueError("[kantan-agents][E18] Tool rules must be a dict")
     allow = rules.get("allow")
     deny = rules.get("deny")
     params = rules.get("params") or {}
