@@ -61,17 +61,49 @@ print([dict(row) for row in spans])
 - 固定の Trace メタデータは Agent の `metadata` に設定する。
 - 生成結果の structured output や rubric は span に保存される（SQLite の `structured_json` / `rubric_json` を参照）。
 - context は省略できる。省略時は空の dict を自動生成する。
-- context を渡す場合、空の dict でも Agent が tool/provider の policy を統合する。
-- get_context_with_policy(PolicyMode.RECOMMENDED) は tool/provider の policy を基準にする。
+- context を渡す場合、空の dict でも Agent が tool/provider の tool_rules 設定を統合する。
+- get_context_with_tool_rules(ToolRulesMode.RECOMMENDED) は tool/provider の tool_rules 設定を基準にする。
 - history が有効な場合は context["history"] に入力/応答が保存される。
 - output_dest を指定すると structured output が context の指定キーに保存される。
 - output_dest は既存キーを上書きする。structured output が dict 化できない場合は保存されない。
+
+entry-point 由来の tool_rules 設定
+
+- Agent 初期化時に entry-point provider を読み込み、`list_tools()` と `get_tool_rules()` の結果を統合する。
+- 統合順序は「基本 tool_rules 設定 → provider 由来 tool_rules 設定 → 明示 tool_rules 設定」。
+- `allow`/`deny` は union、`params` は tool 名ごとに merge。同名キーは上書き。
+- 利用側は `get_context_with_tool_rules(ToolRulesMode.RECOMMENDED)` で provider 由来の推奨設定を取り込み、必要に応じて `context["tool_rules"]` を更新する。
+- provider 由来の tool 名一覧や設定内容を確認する場合は `list_provider_tools()` と `get_provider_tool_rules()` を使う。
+
+```python
+from kantan_agents import Agent, ToolRulesMode, get_context_with_tool_rules
+
+agent = Agent(name="provider-agent", instructions="Use tools when needed.")
+
+context = get_context_with_tool_rules(ToolRulesMode.RECOMMENDED)
+context["tool_rules"]["allow"] = ["myorg.search"]
+context["tool_rules"]["params"] = {
+    "myorg.search": {"query": {"type": "string", "minLength": 1, "maxLength": 200}}
+}
+
+context = agent.run("Find docs about tracing.", context)
+print(context["result"].final_output)
+```
+
+```python
+from kantan_agents import get_provider_tool_rules, list_provider_tools
+
+tool_names = list_provider_tools()
+tool_rules = get_provider_tool_rules()
+print(tool_names)
+print(tool_rules["params"])
+```
 
 Context の最小テンプレート（渡す場合）
 
 ```json
 {
-  "policy": {},
+  "tool_rules": {},
   "history": [],
   "result": null
 }
@@ -79,8 +111,8 @@ Context の最小テンプレート（渡す場合）
 
 よくある失敗
 
-- context を dict 以外で渡してしまう（対処: {} か get_context_with_policy(...) を渡す）
-- policy を上書きして tool が使えなくなる（対処: allow/deny を確認し、必要なら RECOMMENDED を基準に merge する）
+- context を dict 以外で渡してしまう（対処: {} か get_context_with_tool_rules(...) を渡す）
+- tool_rules を上書きして tool が使えなくなる（対処: allow/deny を確認し、必要なら RECOMMENDED を基準に merge する）
 - output_dest に dict 以外が入らず保存されない（対処: output_type を設定し、dict で返る structured output を使う）
 - Prompt 情報が span ではなく Trace metadata に保存される（対処: Trace metadata を参照する）
 
@@ -92,14 +124,14 @@ Context の最小テンプレート（渡す場合）
 | E2 | Prompt.text を空文字にしない。 |
 | E3 | Prompt.name / Prompt.version を空文字にしない。 |
 | E4 | tool に name 属性を持たせる（関数なら function_tool 経由を使う）。 |
-| E5 | context は dict を渡す（{} または get_context_with_policy(...)）。 |
+| E5 | context は dict を渡す（{} または get_context_with_tool_rules(...)）。 |
 | E6 | context["history"] は list にする（不要なら history=0）。 |
-| E7 | tool provider に list_tools と get_policy を実装する。 |
-| E8 | policy の allow/deny を見直して tool を許可する。 |
-| E9 | PolicyMode の列挙値（ALLOW_ALL / DENY_ALL / RECOMMENDED）を使う。 |
+| E7 | tool provider に list_tools と get_tool_rules を実装する。 |
+| E8 | tool_rules の allow/deny を見直して tool を許可する。 |
+| E9 | ToolRulesMode の列挙値（ALLOW_ALL / DENY_ALL / RECOMMENDED）を使う。 |
 | E10 | tool 入力は JSON オブジェクトで渡す（引数を dict にする）。 |
-| E11 | policy.params の type と tool 引数の型を合わせる。 |
-| E12 | policy.params の enum に含まれる値を渡す。 |
+| E11 | tool_rules.params の type と tool 引数の型を合わせる。 |
+| E12 | tool_rules.params の enum に含まれる値を渡す。 |
 | E13 | 文字列長が minLength を満たすようにする。 |
 | E14 | 文字列長が maxLength を超えないようにする。 |
 | E15 | 文字列が pattern に一致するようにする。 |

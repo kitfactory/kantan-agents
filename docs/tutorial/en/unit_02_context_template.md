@@ -28,13 +28,13 @@ Common pitfalls
 
 Code
 ```python
-from kantan_agents import Agent, PolicyMode, get_context_with_policy
+from kantan_agents import Agent, ToolRulesMode, get_context_with_tool_rules
 
 agent = Agent(
     name="templated-agent",
     instructions="Summarize {{ $ctx.topic }} in {{ $ctx.style }}.",
 )
-context = get_context_with_policy(PolicyMode.RECOMMENDED)
+context = get_context_with_tool_rules(ToolRulesMode.RECOMMENDED)
 context.update({"topic": "trace metadata", "style": "two sentences"})
 context = agent.run("Use concise bullet points.", context)
 print(context["result"].final_output)
@@ -42,13 +42,13 @@ print(context["result"].final_output)
 
 History in templates example
 ```python
-from kantan_agents import Agent, PolicyMode, get_context_with_policy
+from kantan_agents import Agent, ToolRulesMode, get_context_with_tool_rules
 
 agent = Agent(
     name="history-agent",
     instructions="Summarize the last exchanges: {{ $ctx.history }}",
 )
-context = get_context_with_policy(PolicyMode.RECOMMENDED)
+context = get_context_with_tool_rules(ToolRulesMode.RECOMMENDED)
 context = agent.run("First message", context)
 context = agent.run("Second message", context)
 print(context["history"])

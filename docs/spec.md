@@ -48,18 +48,18 @@ kantan-agents 仕様（v0.1）
 - And: prompt_name は agent 名から取得する
 - And: prompt_id は無指定の場合にハッシュ値を使う
 
-2.5. context を指定して run したとき、レンダリングと policy と結果格納に用いる（F-10）
+2.5. context を指定して run したとき、レンダリングと tool_rules と結果格納に用いる（F-10）
 
 - Given: context が指定される
 - When: Agent.run を呼び出す
-- Then: context はレンダリング変数と policy の参照に使用される
+- Then: context はレンダリング変数と tool_rules の参照に使用される
 - And: context.result に Agents SDK の返値を格納する
 
 2.6. context が None または空の dict の場合、context を補完する（F-10）
 
 - Given: context が None または空の dict である
 - When: Agent.run を呼び出す
-- Then: Agent 内で policy と result を補完して利用する
+- Then: Agent 内で tool_rules と result を補完して利用する
 
 2.7. Agent.run の返値は context とする（F-10）
 
@@ -149,7 +149,7 @@ kantan-agents 仕様（v0.1）
 - When: ドキュメントを参照する
 - Then: 標準メタデータキー一覧が明記されている
 
-8. Context/Policy（F-10）
+8. Context/ToolRules（F-10）
 
 8.1. テンプレートで $ctx と $env を利用できる（F-10）
 
@@ -159,53 +159,71 @@ kantan-agents 仕様（v0.1）
 - And: 未定義参照は空文字として扱う
 - And: allow_env が True の場合に限り $env.ENV_NAME を参照できる
 
-8.2. policy は allow/deny/params で構成する（F-10）
+8.2. tool_rules は allow/deny/params で構成する（F-10）
 
-- Given: context.policy が指定される
-- When: policy を参照する
-- Then: policy は allow/deny/params の 3 要素で構成する
+- Given: context.tool_rules が指定される
+- When: tool_rules を参照する
+- Then: tool_rules は allow/deny/params の 3 要素で構成する
 - And: allow/deny は "*" を指定できる
 - And: allow/deny が競合する場合は deny を優先する
 
-8.3. policy.params は JSON Schema 互換の最小サブセットを用いる（F-10）
+8.3. tool_rules.params は JSON Schema 互換の最小サブセットを用いる（F-10）
 
-- Given: policy.params を指定する
+- Given: tool_rules.params を指定する
 - When: tool パラメータの検証に利用する
 - Then: type/enum/minLength/maxLength/pattern/minimum/maximum を利用できる
 
-8.4. get_context_with_policy は定数値またはカスタム policy を受け付ける（F-10）
+8.4. get_context_with_tool_rules は定数値またはカスタム tool_rules を受け付ける（F-10）
 
-- Given: PolicyMode（ALLOW_ALL/DENY_ALL/RECOMMENDED）または policy dict を渡す
-- When: get_context_with_policy を呼び出す
-- Then: policy を含む context を返す
+- Given: ToolRulesMode（ALLOW_ALL/DENY_ALL/RECOMMENDED）または tool_rules dict を渡す
+- When: get_context_with_tool_rules を呼び出す
+- Then: tool_rules を含む context を返す
 
-9. Tool Policy 収集（F-11）
+9. ToolRules 収集（F-11）
 
-9.1. entry-point から tool/policy を収集する（F-11）
+9.1. entry-point から tool/tool_rules を収集する（F-11）
 
 - Given: project.entry-points."kantan_agents.tools" が定義される
-- When: Agent が tool/policy を収集する
-- Then: entry-point から provider を取得して tool/policy を収集する
+- When: Agent が tool/tool_rules を収集する
+- Then: entry-point から provider を取得して tool/tool_rules を収集する
 
-9.2. tool 由来 policy と明示 policy を統合する（F-11）
+9.2. tool 由来の tool_rules 設定と明示 tool_rules 設定を統合する（F-11）
 
-- Given: tool 由来 policy と明示 policy が存在する
-- When: policy を統合する
-- Then: 明示 policy を優先する
+- Given: tool 由来の tool_rules 設定と明示 tool_rules 設定が存在する
+- When: tool_rules 設定を統合する
+- Then: 明示 tool_rules 設定を優先する
 - And: allow/deny は union で統合する
 - And: params は tool 名ごとに merge する
 
-9.3. 基本ポリシーと tool 由来 policy を統合する（F-11）
+9.3. 基本 tool_rules 設定と tool 由来 tool_rules 設定を統合する（F-11）
 
-- Given: 基本ポリシーと tool 由来 policy が存在する
-- When: policy を統合する
-- Then: tool 由来 policy を優先する
+- Given: 基本 tool_rules 設定と tool 由来 tool_rules 設定が存在する
+- When: tool_rules 設定を統合する
+- Then: tool 由来 tool_rules 設定を優先する
 
-9.4. provider は tool と policy を取得できる I/F を提供する（F-11）
+9.4. provider は tool と tool_rules を取得できる I/F を提供する（F-11）
 
 - Given: entry-point から provider を取得する
-- When: tool/policy を収集する
-- Then: provider は list_tools と get_policy を提供する
+- When: tool/tool_rules を収集する
+- Then: provider は list_tools と get_tool_rules を提供する
+
+9.5. list_provider_tools は provider 由来の tool 名を返す（F-11）
+
+- Given: entry-point provider から tool が取得できる
+- When: list_provider_tools を呼び出す
+- Then: provider 由来の tool 名一覧を返す
+
+9.6. get_provider_tool_rules は provider 由来の tool_rules 設定を返す（F-11）
+
+- Given: entry-point provider から tool_rules 設定が取得できる
+- When: get_provider_tool_rules を呼び出す
+- Then: provider 由来の tool_rules 設定（allow/deny/params）を返す
+
+9.7. get_effective_tool_rules は provider 由来と明示 tool_rules 設定を統合する（F-11）
+
+- Given: provider 由来の tool_rules 設定と明示 tool_rules 設定が存在する
+- When: get_effective_tool_rules を呼び出す
+- Then: provider 由来の tool_rules 設定に明示 tool_rules 設定を統合した結果を返す
 
 10. History（F-12）
 
@@ -268,9 +286,9 @@ kantan-agents 仕様（v0.1）
 | E4 | [kantan-agents][E4] Tool must define name |
 | E5 | [kantan-agents][E5] Context must be a dict |
 | E6 | [kantan-agents][E6] Context history must be a list |
-| E7 | [kantan-agents][E7] Tool provider must implement list_tools and get_policy |
+| E7 | [kantan-agents][E7] Tool provider must implement list_tools and get_tool_rules |
 | E8 | [kantan-agents][E8] Tool is not allowed: {tool_name} |
-| E9 | [kantan-agents][E9] Unknown PolicyMode: {mode} |
+| E9 | [kantan-agents][E9] Unknown ToolRulesMode: {mode} |
 | E10 | [kantan-agents][E10] Tool input must be a JSON object |
 | E11 | [kantan-agents][E11] Tool parameter type mismatch: {tool_name}.{param_name} |
 | E12 | [kantan-agents][E12] Tool parameter enum mismatch: {tool_name}.{param_name} |

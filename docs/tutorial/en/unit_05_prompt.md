@@ -22,7 +22,7 @@ How to
 
 Code
 ```python
-from kantan_agents import Agent, PolicyMode, Prompt, get_context_with_policy
+from kantan_agents import Agent, ToolRulesMode, Prompt, get_context_with_tool_rules
 
 prompt = Prompt(
     name="qa",
@@ -32,7 +32,7 @@ prompt = Prompt(
 )
 
 agent = Agent(name="prompted-agent", instructions=prompt)
-context = get_context_with_policy(PolicyMode.RECOMMENDED)
+context = get_context_with_tool_rules(ToolRulesMode.RECOMMENDED)
 context = agent.run("Explain tracing in one sentence.", context)
 print(context["result"].final_output)
 ```

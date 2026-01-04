@@ -15,7 +15,7 @@ def test_prepare_context_defaults_when_none():
     agent = Agent(name="agent", instructions="hello", history=1)
     context = agent._prepare_context(None)
     assert context["result"] is None
-    assert "policy" in context
+    assert "tool_rules" in context
     assert context["history"] == []
 
 

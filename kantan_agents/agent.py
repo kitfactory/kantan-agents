@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-import importlib.metadata
 import inspect
 import json
 import uuid
@@ -18,13 +17,14 @@ except Exception:  # pragma: no cover - fallback if pydantic is unavailable
     BaseModel = None
 
 from .prompt import Prompt
-from .policy import (
-    PolicyMode,
+from .tool_rules import (
+    ToolRulesMode,
     is_tool_allowed,
-    merge_policies,
-    normalize_policy,
+    merge_tool_rules,
+    normalize_tool_rules,
     validate_tool_params,
 )
+from .tool_registry import collect_tool_providers
 from .utils import flatten_prompt_meta, hash_text, render_template
 
 
@@ -54,8 +54,8 @@ class Agent:
             raise ValueError("[kantan-agents][E1] instructions is required")
         self._name = name
         self._instructions = instructions
-        provider_tools, provider_policy = _collect_tool_providers()
-        self._provider_policy = provider_policy
+        provider_tools, provider_rules = collect_tool_providers()
+        self._provider_tool_rules = provider_rules
         self._tools = self._normalize_tools(_merge_tools(provider_tools, tools))
         self._renderer = renderer or default_renderer
         self._metadata = dict(metadata) if metadata is not None else {}
@@ -156,7 +156,7 @@ class Agent:
             if not tool_name:
                 raise ValueError("[kantan-agents][E4] Tool must define name")
             normalized[tool_name] = normalized_tool
-        return [self._wrap_tool_with_policy(tool) for tool in normalized.values()]
+        return [self._wrap_tool_with_rules(tool) for tool in normalized.values()]
 
     def _coerce_tool(self, tool: Any) -> Any:
         if isinstance(tool, FunctionTool):
@@ -165,23 +165,23 @@ class Agent:
             return agents.function_tool(tool)
         return tool
 
-    def _wrap_tool_with_policy(self, tool: Any) -> Any:
+    def _wrap_tool_with_rules(self, tool: Any) -> Any:
         if not isinstance(tool, FunctionTool):
             return tool
         tool_name = tool.name
         original_is_enabled = tool.is_enabled
 
         async def _is_enabled(ctx, agent) -> bool:
-            policy = _extract_policy(ctx.context)
-            if not is_tool_allowed(policy, tool_name):
+            tools_rules = _extract_tool_rules(ctx.context)
+            if not is_tool_allowed(tools_rules, tool_name):
                 return False
             return await _eval_is_enabled(original_is_enabled, ctx, agent)
 
         async def _on_invoke_tool(ctx, input_text: str) -> Any:
-            policy = _extract_policy(ctx.context)
-            if not is_tool_allowed(policy, tool_name):
+            tools_rules = _extract_tool_rules(ctx.context)
+            if not is_tool_allowed(tools_rules, tool_name):
                 raise ValueError(f"[kantan-agents][E8] Tool is not allowed: {tool_name}")
-            _validate_tool_input(policy, tool_name, input_text)
+            _validate_tool_input(tools_rules, tool_name, input_text)
             return await tool.on_invoke_tool(ctx, input_text)
 
         return FunctionTool(
@@ -200,8 +200,8 @@ class Agent:
             context = {}
         if not isinstance(context, dict):
             raise ValueError("[kantan-agents][E5] Context must be a dict")
-        resolved_policy = self._resolve_policy(context.get("policy"))
-        context["policy"] = resolved_policy
+        resolved_rules = self._resolve_tool_rules(context.get("tool_rules"))
+        context["tool_rules"] = resolved_rules
         context.setdefault("result", None)
         if self._history > 0:
             history = context.setdefault("history", [])
@@ -233,9 +233,12 @@ class Agent:
             return
         context[self._output_dest] = output_value
 
-    def _resolve_policy(self, explicit_policy: Mapping[str, Any] | PolicyMode | None) -> dict[str, Any]:
-        merged = merge_policies(None, self._provider_policy)
-        return merge_policies(merged, explicit_policy)
+    def _resolve_tool_rules(
+        self,
+        explicit_rules: Mapping[str, Any] | ToolRulesMode | None,
+    ) -> dict[str, Any]:
+        merged = merge_tool_rules(None, self._provider_tool_rules)
+        return merge_tool_rules(merged, explicit_rules)
 
     def _build_trace_metadata(self) -> dict[str, Any]:
         merged: dict[str, Any] = {}
@@ -329,29 +332,6 @@ def _merge_tools(provider_tools: Sequence | None, tools: Sequence | None) -> lis
     return merged
 
 
-def _collect_tool_providers() -> tuple[list, dict | None]:
-    tools: list = []
-    policy: dict | None = None
-    entry_points = importlib.metadata.entry_points()
-    if hasattr(entry_points, "select"):
-        candidates = entry_points.select(group="kantan_agents.tools")
-    else:
-        candidates = entry_points.get("kantan_agents.tools", [])
-    for entry in candidates:
-        provider = entry.load()
-        if callable(provider):
-            provider = provider()
-        if not hasattr(provider, "list_tools") or not hasattr(provider, "get_policy"):
-            raise ValueError("[kantan-agents][E7] Tool provider must implement list_tools and get_policy")
-        provider_tools = provider.list_tools()
-        if provider_tools:
-            tools.extend(list(provider_tools))
-        provider_policy = provider.get_policy()
-        if provider_policy is not None:
-            policy = merge_policies(policy, provider_policy)
-    return tools, policy
-
-
 def _tool_name(tool: Any) -> str | None:
     return getattr(tool, "name", None)
 
@@ -365,15 +345,15 @@ async def _eval_is_enabled(value, ctx, agent) -> bool:
     return bool(value)
 
 
-def _extract_policy(context: Any) -> dict[str, Any] | None:
+def _extract_tool_rules(context: Any) -> dict[str, Any] | None:
     if not isinstance(context, Mapping):
         return None
-    policy = context.get("policy")
-    return normalize_policy(policy) if policy is not None else None
+    rules = context.get("tool_rules")
+    return normalize_tool_rules(rules) if rules is not None else None
 
 
-def _validate_tool_input(policy: Mapping[str, Any] | None, tool_name: str, input_text: str) -> None:
-    if not policy:
+def _validate_tool_input(rules: Mapping[str, Any] | None, tool_name: str, input_text: str) -> None:
+    if not rules:
         return
     if input_text:
         try:
@@ -384,7 +364,7 @@ def _validate_tool_input(policy: Mapping[str, Any] | None, tool_name: str, input
         payload = {}
     if not isinstance(payload, dict):
         raise ValueError("[kantan-agents][E10] Tool input must be a JSON object")
-    validate_tool_params(policy, tool_name, payload)
+    validate_tool_params(rules, tool_name, payload)
 
 
 def _run_in_thread(coro_factory: Callable[[], Any]) -> Any:

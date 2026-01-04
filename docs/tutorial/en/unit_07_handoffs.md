@@ -21,7 +21,7 @@ How to
 
 Code
 ```python
-from kantan_agents import Agent, PolicyMode, get_context_with_policy
+from kantan_agents import Agent, ToolRulesMode, get_context_with_tool_rules
 
 booking_agent = Agent(name="booking", instructions="Handle booking tasks.")
 refund_agent = Agent(name="refund", instructions="Handle refund tasks.")
@@ -31,7 +31,7 @@ manager = Agent(
     instructions="Route tasks to specialists.",
     handoffs=[booking_agent, refund_agent],
 )
-context = get_context_with_policy(PolicyMode.RECOMMENDED)
+context = get_context_with_tool_rules(ToolRulesMode.RECOMMENDED)
 context = manager.run("I need a refund for last week's order.", context)
 print(context["result"].final_output)
 ```

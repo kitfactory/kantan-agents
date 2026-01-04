@@ -5,59 +5,62 @@ from enum import Enum
 from typing import Any, Mapping
 
 
-class PolicyMode(Enum):
+class ToolRulesMode(Enum):
     ALLOW_ALL = "allow_all"
     DENY_ALL = "deny_all"
     RECOMMENDED = "recommended"
 
 
-def get_context_with_policy(mode_or_policy: PolicyMode | Mapping[str, Any]) -> dict[str, Any]:
-    if isinstance(mode_or_policy, PolicyMode):
-        policy = policy_from_mode(mode_or_policy)
+def get_context_with_tool_rules(mode_or_rules: ToolRulesMode | Mapping[str, Any]) -> dict[str, Any]:
+    if isinstance(mode_or_rules, ToolRulesMode):
+        rules = tool_rules_from_mode(mode_or_rules)
     else:
-        policy = dict(mode_or_policy)
-    return {"policy": policy, "result": None}
+        rules = dict(mode_or_rules)
+    return {"tool_rules": rules, "result": None}
 
 
-def policy_from_mode(mode: PolicyMode) -> dict[str, Any]:
-    if mode is PolicyMode.ALLOW_ALL:
+def tool_rules_from_mode(mode: ToolRulesMode) -> dict[str, Any]:
+    if mode is ToolRulesMode.ALLOW_ALL:
         return {"allow": "*", "deny": [], "params": {}}
-    if mode is PolicyMode.DENY_ALL:
+    if mode is ToolRulesMode.DENY_ALL:
         return {"allow": [], "deny": "*", "params": {}}
-    if mode is PolicyMode.RECOMMENDED:
+    if mode is ToolRulesMode.RECOMMENDED:
         return {"allow": None, "deny": None, "params": {}}
-    raise ValueError(f"[kantan-agents][E9] Unknown PolicyMode: {mode}")
+    raise ValueError(f"[kantan-agents][E9] Unknown ToolRulesMode: {mode}")
 
 
-def normalize_policy(policy: Mapping[str, Any] | PolicyMode | None) -> dict[str, Any]:
-    if policy is None:
+def normalize_tool_rules(rules: Mapping[str, Any] | ToolRulesMode | None) -> dict[str, Any]:
+    if rules is None:
         return {"allow": None, "deny": None, "params": {}}
-    if isinstance(policy, PolicyMode):
-        policy = policy_from_mode(policy)
-    allow = policy.get("allow")
-    deny = policy.get("deny")
-    params = policy.get("params") or {}
+    if isinstance(rules, ToolRulesMode):
+        rules = tool_rules_from_mode(rules)
+    allow = rules.get("allow")
+    deny = rules.get("deny")
+    params = rules.get("params") or {}
     if not isinstance(params, Mapping):
         params = {}
     return {"allow": allow, "deny": deny, "params": dict(params)}
 
 
-def merge_policies(base: Mapping[str, Any] | PolicyMode | None, incoming: Mapping[str, Any] | PolicyMode | None) -> dict[str, Any]:
-    base_norm = normalize_policy(base)
-    incoming_norm = normalize_policy(incoming)
+def merge_tool_rules(
+    base: Mapping[str, Any] | ToolRulesMode | None,
+    incoming: Mapping[str, Any] | ToolRulesMode | None,
+) -> dict[str, Any]:
+    base_norm = normalize_tool_rules(base)
+    incoming_norm = normalize_tool_rules(incoming)
     merged_allow = _merge_allow_deny(base_norm["allow"], incoming_norm["allow"])
     merged_deny = _merge_allow_deny(base_norm["deny"], incoming_norm["deny"])
     merged_params = _merge_params(base_norm["params"], incoming_norm["params"])
     return {"allow": merged_allow, "deny": merged_deny, "params": merged_params}
 
 
-def is_tool_allowed(policy: Mapping[str, Any] | None, tool_name: str) -> bool:
-    if not policy:
+def is_tool_allowed(rules: Mapping[str, Any] | None, tool_name: str) -> bool:
+    if not rules:
         return True
-    deny = policy.get("deny")
+    deny = rules.get("deny")
     if deny == "*" or (isinstance(deny, list) and tool_name in deny):
         return False
-    allow = policy.get("allow")
+    allow = rules.get("allow")
     if allow is None:
         return True
     if allow == "*":
@@ -67,10 +70,10 @@ def is_tool_allowed(policy: Mapping[str, Any] | None, tool_name: str) -> bool:
     return True
 
 
-def validate_tool_params(policy: Mapping[str, Any] | None, tool_name: str, arguments: Mapping[str, Any]) -> None:
-    if not policy:
+def validate_tool_params(rules: Mapping[str, Any] | None, tool_name: str, arguments: Mapping[str, Any]) -> None:
+    if not rules:
         return
-    params = policy.get("params") or {}
+    params = rules.get("params") or {}
     rules = params.get(tool_name)
     if not isinstance(rules, Mapping):
         return

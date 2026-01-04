@@ -12,6 +12,8 @@ kantan-agents is a thin, opinionated wrapper around the OpenAI Agents SDK that m
 - Supports output_dest to store structured output under a custom context key.
 - Supports structured outputs via `output_type` and a `RUBRIC` schema helper.
 - Supports handoffs between Agent instances.
+- Collects tools and tool rules via entry points.
+- Provides helpers to inspect provider tools and settings.
 
 ## Quick Start
 

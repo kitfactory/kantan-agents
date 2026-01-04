@@ -3,6 +3,11 @@ from types import SimpleNamespace
 import pytest
 
 from kantan_agents.agent import Agent
+from kantan_agents.tools_info import (
+    get_effective_tool_rules,
+    get_provider_tool_rules,
+    list_provider_tools,
+)
 
 
 class DummyEntryPoint:
@@ -31,7 +36,7 @@ class DummyProvider:
     def list_tools(self):
         return [DummyTool()]
 
-    def get_policy(self):
+    def get_tool_rules(self):
         return {"allow": ["dummy.tool"], "deny": [], "params": {}}
 
 
@@ -39,12 +44,12 @@ class InvalidProvider:
     pass
 
 
-def test_collects_tools_and_policy_from_entry_points(monkeypatch):
+def test_collects_tools_and_rules_from_entry_points(monkeypatch):
     entry_points = DummyEntryPoints([DummyEntryPoint(DummyProvider)])
     monkeypatch.setattr("importlib.metadata.entry_points", lambda: entry_points)
 
     agent = Agent(name="provider-agent", instructions="Hello")
-    assert agent._provider_policy["allow"] == ["dummy.tool"]
+    assert agent._provider_tool_rules["allow"] == ["dummy.tool"]
     assert any(getattr(tool, "name", None) == "dummy.tool" for tool in agent._tools)
 
 
@@ -54,3 +59,34 @@ def test_invalid_provider_raises(monkeypatch):
 
     with pytest.raises(ValueError):
         Agent(name="provider-agent", instructions="Hello")
+
+
+def test_list_provider_tools(monkeypatch):
+    entry_points = DummyEntryPoints([DummyEntryPoint(DummyProvider)])
+    monkeypatch.setattr("importlib.metadata.entry_points", lambda: entry_points)
+
+    assert list_provider_tools() == ["dummy.tool"]
+
+
+def test_get_provider_tool_rules(monkeypatch):
+    entry_points = DummyEntryPoints([DummyEntryPoint(DummyProvider)])
+    monkeypatch.setattr("importlib.metadata.entry_points", lambda: entry_points)
+
+    settings = get_provider_tool_rules()
+    assert settings["allow"] == ["dummy.tool"]
+
+
+def test_get_effective_tool_rules_merges(monkeypatch):
+    entry_points = DummyEntryPoints([DummyEntryPoint(DummyProvider)])
+    monkeypatch.setattr("importlib.metadata.entry_points", lambda: entry_points)
+
+    context = {
+        "tool_rules": {
+            "allow": ["extra.tool"],
+            "deny": [],
+            "params": {"extra.tool": {"text": {"type": "string"}}},
+        }
+    }
+    settings = get_effective_tool_rules(context=context)
+    assert sorted(settings["allow"]) == ["dummy.tool", "extra.tool"]
+    assert settings["params"]["extra.tool"]["text"]["type"] == "string"

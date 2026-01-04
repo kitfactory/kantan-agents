@@ -21,7 +21,7 @@ How to
 
 Code
 ```python
-from kantan_agents import Agent, PolicyMode, Prompt, RUBRIC, get_context_with_policy
+from kantan_agents import Agent, ToolRulesMode, Prompt, RUBRIC, get_context_with_tool_rules
 
 generator_prompt = Prompt(
     name="A",
@@ -30,7 +30,7 @@ generator_prompt = Prompt(
 )
 generator = Agent(name="generator", instructions=generator_prompt)
 
-context = get_context_with_policy(PolicyMode.RECOMMENDED)
+context = get_context_with_tool_rules(ToolRulesMode.RECOMMENDED)
 context = generator.run("Explain trace metadata.", context)
 generated = context["result"].final_output
 
@@ -40,7 +40,7 @@ judge_prompt = Prompt(
     text="Evaluate the answer and output a rubric with score (0-1) and comments.",
 )
 judge = Agent(name="judge", instructions=judge_prompt, output_type=RUBRIC)
-judge_context = get_context_with_policy(PolicyMode.RECOMMENDED)
+judge_context = get_context_with_tool_rules(ToolRulesMode.RECOMMENDED)
 judge_context = judge.run(str(generated), judge_context)
 print(judge_context["result"].final_output)
 ```

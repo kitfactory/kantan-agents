@@ -7,7 +7,7 @@ kantan-agents アーキテクチャ（v0.1）
 - Application/Domain 層
   - Trace メタデータ標準化ルール
   - Prompt/Agent の入力バリデーション
-  - Context/Policy の統合ルール
+- Context/ToolRules の統合ルール
 - Infrastructure 層
   - OpenAI Agents SDK
   - kantan-llm（get_llm / Trace）
@@ -23,17 +23,21 @@ kantan-agents アーキテクチャ（v0.1）
   - run(input: str, context: dict | None = None) -> dict
   - run_async(input: str, context: dict | None = None) -> dict
 - Context
-  - policy: dict | None
+  - tool_rules: dict | None
   - result: Any | None
-- PolicyMode
+- ToolRulesMode
   - ALLOW_ALL
   - DENY_ALL
   - RECOMMENDED
 - ToolProvider
   - list_tools() -> list
-  - get_policy() -> dict
-- get_context_with_policy
-  - get_context_with_policy(mode_or_policy: PolicyMode | dict) -> dict
+  - get_tool_rules() -> dict
+- get_context_with_tool_rules
+  - get_context_with_tool_rules(mode_or_rules: ToolRulesMode | dict) -> dict
+- tool_rules ヘルパ
+  - list_provider_tools() -> list[str]
+  - get_provider_tool_rules() -> dict
+  - get_effective_tool_rules(context: dict | None = None, tool_rules: ToolRulesMode | dict | None = None) -> dict
 - Prompt
   - name: str
   - version: str
@@ -72,7 +76,7 @@ run_async(input: str, context: dict | None = None) -> dict
 | 引数 | 型 | 必須 | 説明 |
 | --- | --- | --- | --- |
 | input | str | yes | Agent への入力。 |
-| context | dict \| None | no | rendering/policy/result を保持する Context。None/空の dict の場合は補完する。 |
+| context | dict \| None | no | rendering/tool_rules/result を保持する Context。None/空の dict の場合は補完する。 |
 
 返値: context。
 
@@ -81,7 +85,7 @@ run_async も同じ引数で context を返す。
 データ設計（最小）
 
 - Context
-  - policy
+  - tool_rules
   - result
   - history
     - role
@@ -94,7 +98,7 @@ run_async も同じ引数で context を返す。
   - prompt_id
   - prompt_meta_*（スカラーのみ）
   - agent_run_id
-- Policy
+- ToolRules
   - allow: list[str] | "*"
   - deny: list[str] | "*"
   - params: dict[str, dict]

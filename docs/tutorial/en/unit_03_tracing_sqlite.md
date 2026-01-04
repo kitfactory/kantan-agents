@@ -22,13 +22,13 @@ How to
 Code
 ```python
 from kantan_llm.tracing import SQLiteTracer
-from kantan_agents import Agent, PolicyMode, get_context_with_policy, set_trace_processors
+from kantan_agents import Agent, ToolRulesMode, get_context_with_tool_rules, set_trace_processors
 
 tracer = SQLiteTracer("kantan_agents_traces.sqlite3")
 set_trace_processors([tracer])
 
 agent = Agent(name="trace-agent", instructions="Answer briefly.")
-context = get_context_with_policy(PolicyMode.RECOMMENDED)
+context = get_context_with_tool_rules(ToolRulesMode.RECOMMENDED)
 context = agent.run("Explain trace metadata in one sentence.", context)
 print(context["result"].final_output)
 ```

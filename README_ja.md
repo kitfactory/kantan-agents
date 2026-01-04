@@ -12,6 +12,8 @@ kantan-agents は OpenAI Agents SDK の薄いラッパで、観測性と評価�
 - structured output を output_dest 指定で context に保存できる
 - structured output と `RUBRIC` schema ヘルパ
 - Agent インスタンス間の handoff
+- entry-point から tool と tool_rules 設定を収集する
+- provider 由来の tool と tool_rules 設定を確認するヘルパを提供する
 
 ## クイックスタート
 

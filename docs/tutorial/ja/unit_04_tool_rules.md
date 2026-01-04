@@ -2,7 +2,7 @@ kantan-agents チュートリアル 単元4（v0.1）
 
 タイトル
 
-policy でツール利用を制御する
+tool_rules でツール利用を制御する
 
 概要
 
@@ -11,8 +11,8 @@ policy でツール利用を制御する
 ステップ
 
 - ツール関数を用意して Agent に渡す。
-- allow/deny/params を含む policy を作る。
-- context に policy を入れて run する。
+- allow/deny/params を含む tool_rules 設定を作る。
+- context に tool_rules 設定を入れて run する。
 
 実現方法
 
@@ -21,7 +21,7 @@ policy でツール利用を制御する
 
 ソースコード
 ```python
-from kantan_agents import Agent, PolicyMode, get_context_with_policy
+from kantan_agents import Agent, ToolRulesMode, get_context_with_tool_rules
 
 
 def word_count(text: str) -> int:
@@ -29,17 +29,17 @@ def word_count(text: str) -> int:
 
 
 agent = Agent(
-    name="policy-agent",
+    name="tools-agent",
     instructions="Use word_count and answer briefly.",
     tools=[word_count],
 )
-policy = {
+tool_rules = {
     "allow": ["word_count"],
     "deny": [],
     "params": {"word_count": {"text": {"type": "string", "maxLength": 200}}},
 }
-context = get_context_with_policy(PolicyMode.RECOMMENDED)
-context["policy"] = policy
+context = get_context_with_tool_rules(ToolRulesMode.RECOMMENDED)
+context["tool_rules"] = tool_rules
 context = agent.run("Count the words in this sentence.", context)
 print(context["result"].final_output)
 ```

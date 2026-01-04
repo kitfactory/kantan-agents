@@ -26,7 +26,7 @@ structured output を使う
 ソースコード
 ```python
 from pydantic import BaseModel
-from kantan_agents import Agent, PolicyMode, get_context_with_policy
+from kantan_agents import Agent, ToolRulesMode, get_context_with_tool_rules
 
 class Summary(BaseModel):
     title: str
@@ -38,7 +38,7 @@ agent = Agent(
     output_type=Summary,
     output_dest="summary_json",
 )
-context = get_context_with_policy(PolicyMode.RECOMMENDED)
+context = get_context_with_tool_rules(ToolRulesMode.RECOMMENDED)
 context = agent.run("Summarize the release notes.", context)
 print(context["result"].final_output)
 print(context["summary_json"]["title"])
