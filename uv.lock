@@ -523,7 +523,7 @@ wheels = [
 
 [[package]]
 name = "kantan-agents"
-version = "0.1.0"
+version = "0.1.2"
 source = { virtual = "." }
 dependencies = [
     { name = "kantan-llm" },
@@ -537,7 +537,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "kantan-llm", specifier = ">=0.1.6" },
+    { name = "kantan-llm", specifier = ">=0.1.7" },
     { name = "openai-agents", specifier = ">=0.6.4" },
 ]
 
@@ -546,14 +546,14 @@ dev = [{ name = "pytest", specifier = ">=9.0.2" }]
 
 [[package]]
 name = "kantan-llm"
-version = "0.1.6"
+version = "0.1.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "openai" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6e/e4/d033905507efedf3341f21f4611bab03b1737bbcf51d24ea8315ee24b010/kantan_llm-0.1.6.tar.gz", hash = "sha256:d95b39e4ee4fcdbdb8fdc183b5c80c0fe713d6c52470fc0f0c38a557dc17d242", size = 29562, upload-time = "2026-01-02T03:21:41.246Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c1/f3/0149e81bde36dfb8a2666cfd545d9455847d7ab6f74c336050d260d34ca8/kantan_llm-0.1.7.tar.gz", hash = "sha256:5dd7a513fb8df97cf5a69b6451090d623809d3295b5afcbcb49fb1460ad721b1", size = 35267, upload-time = "2026-01-05T01:46:40.813Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/13/02/f200e995018ed302f558fa504f05715171b81072bdfebc7779ca4c1ee405/kantan_llm-0.1.6-py3-none-any.whl", hash = "sha256:1a12c82790bd242f9ec26b28fd3416dd43ded512ca2a776cd34e49021e641b60", size = 29616, upload-time = "2026-01-02T03:21:39.393Z" },
+    { url = "https://files.pythonhosted.org/packages/5e/9a/e971ab72393de602ba0f9f280621ecc88e54958f2d3ae63a858331125e0d/kantan_llm-0.1.7-py3-none-any.whl", hash = "sha256:02a77be67e8be00212afe85be68dd07bd8738fe210e392abd153e229b2fb6fb7", size = 33716, upload-time = "2026-01-05T01:46:38.496Z" },
 ]
 
 [[package]]

@@ -19,6 +19,8 @@ How to
 - If you omit context, kantan-agents creates an empty dict automatically.
 - The returned context always contains a result after run completes.
 - History is stored in context["history"] when enabled.
+- If you pass a string model name, kantan-llm resolves it via get_llm.
+- If you pass AsyncClientBundle/KantanAsyncLLM, kantan-agents injects the AsyncOpenAI client.
 
 Common pitfalls
 
@@ -30,6 +32,15 @@ Code
 from kantan_agents import Agent
 
 agent = Agent(name="basic-agent", instructions="You are a helpful assistant.")
+context = agent.run("Hello")
+print(context["result"].final_output)
+```
+
+With a model name
+```python
+from kantan_agents import Agent
+
+agent = Agent(name="basic-agent", instructions="You are a helpful assistant.", model="gpt-5-mini")
 context = agent.run("Hello")
 print(context["result"].final_output)
 ```

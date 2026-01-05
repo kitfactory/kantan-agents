@@ -16,6 +16,8 @@ Context と tool_rules の初期値
 - context を渡す場合は get_context_with_tool_rules(ToolRulesMode.ALLOW_ALL | ToolRulesMode.DENY_ALL | ToolRulesMode.RECOMMENDED) で事前作成できる。
 - ToolRulesMode.RECOMMENDED は tool/provider の tool_rules 設定を基準にする。
 - history が有効な場合は context["history"] に保存される。
+- model を文字列で渡す場合は kantan-llm の get_llm で解決される。
+- model に AsyncClientBundle/KantanAsyncLLM を渡す場合は AsyncOpenAI client を注入する。
 
 単元一覧
 

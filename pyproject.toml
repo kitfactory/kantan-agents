@@ -5,7 +5,7 @@ description = "kantan-agents is a thin, opinionated wrapper around the OpenAI Ag
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "kantan-llm>=0.1.6",
+    "kantan-llm>=0.1.7",
     "openai-agents>=0.6.4",
 ]
 

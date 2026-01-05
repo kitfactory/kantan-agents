@@ -8,9 +8,11 @@ import uuid
 from typing import Any, Callable, Mapping, Sequence
 
 import agents
+from agents.models.openai_provider import OpenAIProvider
 from agents.tool import FunctionTool
 from agents.tracing import generation_span
 from agents.lifecycle import RunHooksBase
+from kantan_llm import AsyncClientBundle, KantanAsyncLLM, get_llm
 try:
     from pydantic import BaseModel
 except Exception:  # pragma: no cover - fallback if pydantic is unavailable
@@ -41,6 +43,8 @@ class Agent:
         name: str,
         instructions: str | Prompt,
         *,
+        model: str | Any | None = None,
+        model_provider_factory: Callable[[], Any] | None = None,
         tools: list | None = None,
         renderer: Renderer | None = None,
         metadata: dict | None = None,
@@ -54,6 +58,9 @@ class Agent:
             raise ValueError("[kantan-agents][E1] instructions is required")
         self._name = name
         self._instructions = instructions
+        resolved_model, inferred_provider_factory = self._resolve_model(model)
+        self._model = resolved_model
+        self._model_provider_factory = model_provider_factory or inferred_provider_factory
         provider_tools, provider_rules = collect_tool_providers()
         self._provider_tool_rules = provider_rules
         self._tools = self._normalize_tools(_merge_tools(provider_tools, tools))
@@ -95,7 +102,13 @@ class Agent:
         context = self._prepare_context(context)
         sdk_agent = self._build_sdk_agent()
         merged_metadata = self._build_trace_metadata()
-        run_config = agents.RunConfig(trace_metadata=merged_metadata)
+        if self._model_provider_factory is None:
+            run_config = agents.RunConfig(trace_metadata=merged_metadata)
+        else:
+            run_config = agents.RunConfig(
+                trace_metadata=merged_metadata,
+                model_provider=self._model_provider_factory(),
+            )
         hooks = _OutputTraceHooks(self._output_type)
         run_result = await agents.Runner.run(
             starting_agent=sdk_agent,
@@ -132,8 +145,28 @@ class Agent:
             instructions=self._instruction_callable,
             tools=self._tools,
             handoffs=handoffs,
+            model=self._model,
             output_type=self._output_type,
         )
+
+    def _resolve_model(
+        self,
+        model: str | Any | None,
+    ) -> tuple[Any | None, Callable[[], Any] | None]:
+        if model is None:
+            return None, None
+        async_bundle = _as_async_bundle(model)
+        if async_bundle is not None:
+            return async_bundle.model, _build_async_provider_factory(async_bundle)
+        if isinstance(model, str):
+            try:
+                resolved = get_llm(model)
+            except Exception as exc:
+                raise ValueError(f"[kantan-agents][E19] Model not found: {model}") from exc
+            if resolved is None:
+                raise ValueError(f"[kantan-agents][E19] Model not found: {model}")
+            return model, None
+        return model, None
 
     def _instruction_callable(self, ctx, agent) -> str:
         context = getattr(ctx, "context", None)
@@ -373,3 +406,28 @@ def _run_in_thread(coro_factory: Callable[[], Any]) -> Any:
 
     with ThreadPoolExecutor(max_workers=1) as executor:
         return executor.submit(_runner).result()
+
+
+def _as_async_bundle(model: Any) -> AsyncClientBundle | None:
+    if isinstance(model, AsyncClientBundle):
+        return model
+    if isinstance(model, KantanAsyncLLM):
+        base_url = getattr(model.client, "base_url", None)
+        if base_url is not None:
+            base_url = str(base_url)
+        return AsyncClientBundle(
+            client=model.client,
+            model=model.model,
+            provider=model.provider,
+            base_url=base_url,
+        )
+    return None
+
+
+def _build_async_provider_factory(bundle: AsyncClientBundle) -> Callable[[], Any]:
+    use_responses = bundle.provider == "openai"
+
+    def _factory() -> Any:
+        return OpenAIProvider(openai_client=bundle.client, use_responses=use_responses)
+
+    return _factory

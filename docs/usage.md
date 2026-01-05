@@ -29,7 +29,7 @@ prompt = Prompt(
     meta={"variant": "A"},
 )
 
-agent = Agent(name="support-agent", instructions=prompt)
+agent = Agent(name="support-agent", instructions=prompt, model="gpt-5-mini")
 context = agent.run("Explain trace metadata in one sentence.")
 print(context["result"].final_output)
 ```
@@ -66,6 +66,8 @@ print([dict(row) for row in spans])
 - history が有効な場合は context["history"] に入力/応答が保存される。
 - output_dest を指定すると structured output が context の指定キーに保存される。
 - output_dest は既存キーを上書きする。structured output が dict 化できない場合は保存されない。
+- model を文字列で渡した場合、kantan-llm の get_llm で解決される。
+- model に AsyncClientBundle/KantanAsyncLLM を渡した場合、bundle/llm の client を OpenAIProvider に注入する。
 
 entry-point 由来の tool_rules 設定
 
@@ -149,6 +151,7 @@ Context の最小テンプレート（渡す場合）
 | E16 | 数値が minimum 以上になるようにする。 |
 | E17 | 数値が maximum 以下になるようにする。 |
 | E18 | tool_rules は dict を渡す。 |
+| E19 | model 名が get_llm で解決できるように指定する。 |
 
 スニペット集
 
@@ -157,6 +160,26 @@ Context の最小テンプレート（渡す場合）
 from kantan_agents import Agent
 
 agent = Agent(name="basic-agent", instructions="You are a helpful assistant.")
+context = agent.run("Hello")
+print(context["result"].final_output)
+```
+
+model を指定する
+```python
+from kantan_agents import Agent
+
+agent = Agent(name="basic-agent", instructions="You are a helpful assistant.", model="gpt-5-mini")
+context = agent.run("Hello")
+print(context["result"].final_output)
+```
+
+AsyncClientBundle を使う
+```python
+from kantan_llm import get_async_llm_client
+from kantan_agents import Agent
+
+bundle = get_async_llm_client("gpt-5-mini")
+agent = Agent(name="basic-agent", instructions="You are a helpful assistant.", model=bundle)
 context = agent.run("Hello")
 print(context["result"].final_output)
 ```

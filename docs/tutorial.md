@@ -15,6 +15,8 @@ Context and tool rules defaults
 - If you pass an empty dict, the Agent fills in tool rules from tool/provider defaults.
 - `ToolRulesMode.RECOMMENDED` uses tool/provider tool rules as the base.
 - History is stored in `context["history"]` when enabled.
+- If you pass a string model name, kantan-llm resolves it via `get_llm`.
+- If you pass AsyncClientBundle/KantanAsyncLLM, kantan-agents injects the AsyncOpenAI client.
 
 Units
 

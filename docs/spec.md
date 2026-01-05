@@ -22,11 +22,14 @@ kantan-agents 仕様（v0.1）
 - When: Agent を生成する
 - Then: instructions は必須として保持され、指定が無い場合はエラーとする
 
-2.2. Agent を生成したとき、tools/renderer/metadata/output_type/handoffs/allow_env/history/output_dest を任意で受け入れる（F-02/F-10/F-12/F-13）
+2.2. Agent を生成したとき、model/model_provider_factory/tools/renderer/metadata/output_type/handoffs/allow_env/history/output_dest を任意で受け入れる（F-02/F-10/F-12/F-13）
 
-- Given: tools と renderer と metadata と output_type と handoffs と allow_env と history と output_dest が任意で指定される
+- Given: model と model_provider_factory と tools と renderer と metadata と output_type と handoffs と allow_env と history と output_dest が任意で指定される
 - When: Agent を生成する
-- Then: tools は Agents SDK の tools に渡す
+- Then: model は Agents SDK の model に渡す
+- And: model が str の場合は kantan-llm の get_llm で解決する
+- And: tools は Agents SDK の tools に渡す
+- And: model_provider_factory は RunConfig の model_provider を生成する
 - And: renderer は任意として保持し、metadata は保持する
 - And: output_type は Agents SDK の output_type に渡す
 - And: handoffs は Agents SDK の handoffs に渡す
@@ -78,6 +81,24 @@ kantan-agents 仕様（v0.1）
 - Given: context を使用して Agent.run_async を呼び出す
 - When: Agent.run_async が完了する
 - Then: run と同様に context を返す
+
+2.10. model に AsyncClientBundle を指定した場合、AsyncOpenAI client を OpenAIProvider に注入する（F-14）
+
+- Given: model が AsyncClientBundle であり model_provider_factory が未指定である
+- When: Agent を生成する
+- Then: bundle.model を Agents SDK の model として利用する
+- And: OpenAIProvider に bundle.client を注入する
+- And: bundle.provider が openai の場合は responses API を使用する
+- And: bundle.provider が openai 以外の場合は chat completions API を使用する
+
+2.11. model に KantanAsyncLLM を指定した場合、AsyncClientBundle と同等に扱う（F-14）
+
+- Given: model が KantanAsyncLLM であり model_provider_factory が未指定である
+- When: Agent を生成する
+- Then: llm.model を Agents SDK の model として利用する
+- And: OpenAIProvider に llm.client を注入する
+- And: llm.provider が openai の場合は responses API を使用する
+- And: llm.provider が openai 以外の場合は chat completions API を使用する
 
 3. Prompt 型（kantan-lab 管理）（F-04）
 
@@ -283,6 +304,12 @@ kantan-agents 仕様（v0.1）
 - When: Agent.run を呼び出す
 - Then: エラー E18 を返す
 
+7.5. model が str で get_llm に解決できない場合はエラーとする（F-02）
+
+- Given: model が str で get_llm に解決できない
+- When: Agent を生成する
+- Then: エラー E19 を返す
+
 エラー/メッセージ一覧
 
 | Error ID | メッセージ |
@@ -305,3 +332,4 @@ kantan-agents 仕様（v0.1）
 | E16 | [kantan-agents][E16] Tool parameter minimum mismatch: {tool_name}.{param_name} |
 | E17 | [kantan-agents][E17] Tool parameter maximum mismatch: {tool_name}.{param_name} |
 | E18 | [kantan-agents][E18] Tool rules must be a dict |
+| E19 | [kantan-agents][E19] Model not found: {model} |

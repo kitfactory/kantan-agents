@@ -10,7 +10,7 @@ kantan-agents アーキテクチャ（v0.1）
 - Context/ToolRules の統合ルール
 - Infrastructure 層
   - OpenAI Agents SDK
-  - kantan-llm（get_llm / Trace）
+  - kantan-llm（get_llm / get_async_llm_client / get_async_llm / Trace）
   - kantan-lab（分析対象としての依存）
   - importlib.metadata（entry-point 収集）
 
@@ -19,7 +19,7 @@ kantan-agents アーキテクチャ（v0.1）
 主要インターフェース（I/F）
 
 - Agent
-  - __init__(name: str, instructions: str | Prompt, *, tools: list | None = None, renderer: Callable | None = None, metadata: dict | None = None, output_type: type | None = None, handoffs: list | None = None, allow_env: bool = False, history: int = 50, output_dest: str | None = None)
+  - __init__(name: str, instructions: str | Prompt, *, model: str | Any | None = None, model_provider_factory: Callable[[], Any] | None = None, tools: list | None = None, renderer: Callable | None = None, metadata: dict | None = None, output_type: type | None = None, handoffs: list | None = None, allow_env: bool = False, history: int = 50, output_dest: str | None = None)
   - run(input: str, context: dict | None = None) -> dict
   - run_async(input: str, context: dict | None = None) -> dict
 - Context
@@ -54,12 +54,14 @@ kantan-agents アーキテクチャ（v0.1）
 
 Agent クラス I/F（メソッド別の引数説明）
 
-__init__(name: str, instructions: str | Prompt, *, tools: list | None = None, renderer: Callable | None = None, metadata: dict | None = None, output_type: type | None = None, handoffs: list | None = None, allow_env: bool = False, history: int = 50, output_dest: str | None = None)
+__init__(name: str, instructions: str | Prompt, *, model: str | Any | None = None, model_provider_factory: Callable[[], Any] | None = None, tools: list | None = None, renderer: Callable | None = None, metadata: dict | None = None, output_type: type | None = None, handoffs: list | None = None, allow_env: bool = False, history: int = 50, output_dest: str | None = None)
 
 | 引数 | 型 | 必須 | 説明 |
 | --- | --- | --- | --- |
 | name | str | yes | Agent 名。Trace の agent_name に利用する。 |
 | instructions | str \| Prompt | yes | 指示文または Prompt。Prompt の場合は標準メタデータを自動注入する。 |
+| model | str \| Any \| None | no | model を指定する。str の場合は kantan-llm の get_llm で解決する。AsyncClientBundle/KantanAsyncLLM の場合は client を OpenAIProvider に注入する。 |
+| model_provider_factory | Callable[[], Any] \| None | no | RunConfig の model_provider を生成する factory。 |
 | tools | list \| None | no | Agents SDK の tools。None の場合は未指定。 |
 | renderer | Callable \| None | no | instructions をレンダリングする関数。None の場合はデフォルト。 |
 | metadata | dict \| None | no | Agent に紐づく固定の付与情報。Trace へ付与する。 |

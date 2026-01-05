@@ -28,6 +28,13 @@ kantan-agents 作業計画（v0.1）
 - [x] F-13: output_dest の仕様更新（context/output）
 - [x] F-13: output_dest の設計反映（Agent/output_dest）
 - [x] F-13: output_dest のテストを実行する
+- [x] F-02: Agent の model 引数を追加する
+- [x] F-02: model 文字列を get_llm で解決する実装を追加する
+- [x] F-02: model 解決のテストを実行する
+- [x] F-02: model 指定のドキュメントを更新する
+- [x] F-14: AsyncClientBundle/KantanAsyncLLM の model 注入を実装する
+- [x] F-14: async model 注入のテストを追加する
+- [x] F-14: async model 注入のドキュメントを更新する
 
 <details>
 <summary>補足</summary>
@@ -41,7 +48,13 @@ kantan-agents 作業計画（v0.1）
 環境変数
 
 - OPENAI_API_KEY: テスト時に使用（OpenAI API Key）
-- テストでは gpt-5-mini を使用する。
+- LMSTUDIO_BASE_URL: LMStudio の base URL（例: http://192.168.11.16:1234、/v1 は省略可）
+- LMSTUDIO_API_KEY: LMStudio の API Key（無い場合はダミーで可）
+- LMSTUDIO_MODEL: LMStudio のモデル名（例: openai/gpt-oss-20b）
+- LMSTUDIO_SUPPORTS_TOOLS: LMStudio で tool 呼び出しを検証する場合は 1 を指定する
+- LMSTUDIO_FULL_TUTORIAL: LMStudio で tutorial のスモークテストを全実行する場合は 1 を指定する
+- LMSTUDIO_STRICT_RUBRIC: LMStudio で rubric のスコア範囲を厳密に検証する場合は 1 を指定する
+- テストでは gpt-5-mini と openai/gpt-oss-20b を使用する。
 
 チュートリアル（段階的）
 

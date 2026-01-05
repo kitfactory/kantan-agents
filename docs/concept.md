@@ -20,7 +20,7 @@ kantan-agents 要件定義（v0.1）
 使用するライブラリ
 
 - OpenAI Agents SDK
-- kantan-llm（get_llm / Trace）
+ - kantan-llm（get_llm / get_async_llm_client / get_async_llm / Trace）
 - kantan-lab（分析・改善）
 
 ソフトウェア全体設計の概要
@@ -40,7 +40,7 @@ kantan-agents 要件定義（v0.1）
 | Spec ID | 機能 | 詳細 | 依存関係 | MVP/Phase |
 | --- | --- | --- | --- | --- |
 | F-01 | Agents SDK tracing API の再エクスポート | add_trace_processor / set_trace_processors を薄く再エクスポート | OpenAI Agents SDK | v0.1 |
-| F-02 | Agent クラス（コンストラクタ） | instructions 必須、renderer 任意、Prompt 指定可 | OpenAI Agents SDK | v0.1 |
+| F-02 | Agent クラス（コンストラクタ） | instructions 必須、renderer 任意、Prompt/model 指定可 | OpenAI Agents SDK | v0.1 |
 | F-03 | Agent.run と Trace メタデータ自動注入 | prompt/agent/run の標準キーを Trace に注入 | kantan-llm Trace | v0.1 |
 | F-04 | Prompt 型（kantan-lab 管理） | name/version/text/meta/id を最小定義 | kantan-lab | v0.1 |
 | F-05 | Trace メタデータ標準キー | kantan-lab 分析用のキー規約 | kantan-llm Trace / kantan-lab | v0.1 |
@@ -52,9 +52,14 @@ kantan-agents 要件定義（v0.1）
 | F-11 | ToolRules 収集 | entry-point から tool/tool_rules を収集して統合 | importlib.metadata | v0.2 |
 | F-12 | History 機能 | 入力/応答の履歴を context に保持 | OpenAI Agents SDK | v0.2 |
 | F-13 | output_dest 機能 | structured output を context の任意キーに保存 | OpenAI Agents SDK | v0.2 |
+| F-14 | Async モデル注入 | AsyncClientBundle/KantanAsyncLLM の client を Agents SDK に注入 | kantan-llm / OpenAI Agents SDK | v0.2 |
 
 主要な仕様メモ
 
+- Agent 初期化
+  - model を指定できる
+  - model が str の場合は kantan-llm の get_llm で解決する
+  - model が AsyncClientBundle/KantanAsyncLLM の場合は bundle.model を使い、bundle.client を OpenAIProvider に注入する
 - Agent.run
   - シグネチャ: run(input: str, context: dict | None = None) -> context
   - context は rendering/tool_rules/result を含む辞書
