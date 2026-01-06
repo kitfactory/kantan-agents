@@ -14,12 +14,15 @@ class Rubric(BaseModel):
     score: float
     comments: list[str]
 
+def _agent_kwargs(model_env):
+    return {
+        "model": model_env.model,
+        "model_provider_factory": model_env.model_provider_factory,
+    }
+
 
 @pytest.mark.integration
-@pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="OPENAI_API_KEY is required")
-def test_trace_records_tool_calls_and_rubric(tmp_path):
-    os.environ["OPENAI_DEFAULT_MODEL"] = "gpt-5-mini"
-
+def test_trace_records_tool_calls_and_rubric(tmp_path, model_env):
     def word_count(text: str) -> int:
         return len(text.split())
 
@@ -33,6 +36,7 @@ def test_trace_records_tool_calls_and_rubric(tmp_path):
             "Then output a rubric with score (0-1) and comments."
         ),
         tools=[word_count],
+        **_agent_kwargs(model_env),
         output_type=Rubric,
     )
 
@@ -40,25 +44,26 @@ def test_trace_records_tool_calls_and_rubric(tmp_path):
         context = agent.run("Assess: Trace quality is important.", {})
     except BadRequestError as exc:
         if "model_not_found" in str(exc) or "does not exist" in str(exc):
-            pytest.skip("gpt-5-mini is not available for this API key")
+            pytest.skip(f"{model_env.model} is not available for this endpoint")
         raise
 
     assert context["result"].final_output is not None
     assert isinstance(context["result"].final_output, Rubric)
-    assert 0.0 <= context["result"].final_output.score <= 1.0
+    strict_rubric = model_env.name != "lmstudio" or os.getenv("LMSTUDIO_STRICT_RUBRIC") == "1"
+    if strict_rubric:
+        assert 0.0 <= context["result"].final_output.score <= 1.0
 
     spans = tracer.search_spans(query=SpanQuery(limit=50))
     assert spans
 
-    assert any(span.span_type == "function" for span in spans)
+    supports_tools = model_env.name != "lmstudio" or os.getenv("LMSTUDIO_SUPPORTS_TOOLS") == "1"
+    if supports_tools:
+        assert any(span.span_type == "function" for span in spans)
     assert any(span.rubric is not None for span in spans)
 
 
 @pytest.mark.integration
-@pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="OPENAI_API_KEY is required")
-def test_trace_records_prompt_metadata(tmp_path):
-    os.environ["OPENAI_DEFAULT_MODEL"] = "gpt-5-mini"
-
+def test_trace_records_prompt_metadata(tmp_path, model_env):
     tracer = SQLiteTracer(str(tmp_path / "traces.sqlite3"))
     set_trace_processors([tracer])
 
@@ -68,13 +73,13 @@ def test_trace_records_prompt_metadata(tmp_path):
         text="Answer the user briefly.",
         meta={"variant": "A"},
     )
-    agent = Agent(name="prompted-agent", instructions=prompt)
+    agent = Agent(name="prompted-agent", instructions=prompt, **_agent_kwargs(model_env))
 
     try:
         context = agent.run("Explain tracing in one sentence.", {})
     except BadRequestError as exc:
         if "model_not_found" in str(exc) or "does not exist" in str(exc):
-            pytest.skip("gpt-5-mini is not available for this API key")
+            pytest.skip(f"{model_env.model} is not available for this endpoint")
         raise
 
     assert context["result"].final_output is not None
@@ -91,10 +96,7 @@ def test_trace_records_prompt_metadata(tmp_path):
 
 
 @pytest.mark.integration
-@pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="OPENAI_API_KEY is required")
-def test_rubric_judges_generated_output(tmp_path):
-    os.environ["OPENAI_DEFAULT_MODEL"] = "gpt-5-mini"
-
+def test_rubric_judges_generated_output(tmp_path, model_env):
     tracer = SQLiteTracer(str(tmp_path / "traces.sqlite3"))
     set_trace_processors([tracer])
 
@@ -104,13 +106,13 @@ def test_rubric_judges_generated_output(tmp_path):
         text="Write a short, clear explanation of trace metadata in one sentence.",
         meta={"role": "generator"},
     )
-    generator = Agent(name="generator", instructions=prompt_a)
+    generator = Agent(name="generator", instructions=prompt_a, **_agent_kwargs(model_env))
 
     try:
         context = generator.run("Explain trace metadata.", {})
     except BadRequestError as exc:
         if "model_not_found" in str(exc) or "does not exist" in str(exc):
-            pytest.skip("gpt-5-mini is not available for this API key")
+            pytest.skip(f"{model_env.model} is not available for this endpoint")
         raise
 
     generated = context["result"].final_output
@@ -127,6 +129,7 @@ def test_rubric_judges_generated_output(tmp_path):
     judge_agent = Agent(
         name="judge",
         instructions=prompt_judge,
+        **_agent_kwargs(model_env),
         output_type=Rubric,
     )
 
@@ -134,11 +137,13 @@ def test_rubric_judges_generated_output(tmp_path):
         judge_context = judge_agent.run(str(generated), {})
     except BadRequestError as exc:
         if "model_not_found" in str(exc) or "does not exist" in str(exc):
-            pytest.skip("gpt-5-mini is not available for this API key")
+            pytest.skip(f"{model_env.model} is not available for this endpoint")
         raise
 
     assert isinstance(judge_context["result"].final_output, Rubric)
-    assert 0.0 <= judge_context["result"].final_output.score <= 1.0
+    strict_rubric = model_env.name != "lmstudio" or os.getenv("LMSTUDIO_STRICT_RUBRIC") == "1"
+    if strict_rubric:
+        assert 0.0 <= judge_context["result"].final_output.score <= 1.0
 
     spans = tracer.search_spans(query=SpanQuery(limit=50))
     assert any(span.rubric is not None for span in spans)
